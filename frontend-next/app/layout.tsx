@@ -37,9 +37,9 @@ export default function RootLayout({
           padding: '12px',
         }}>
           
-        <span style={{ color: '#ffffff', fontWeight: 'bold', fontSize: '24px' }}>
-          <Link href="/">ArtPort</Link>     {/* logo that acts as a route to home page */}
-        </span>
+        <Link href="/" 
+          style={{ color: '#ffffff', fontWeight: 'bold', fontSize: '24px' }}>
+          ArtPort </Link>            {/* logo that acts as a route to home page */}
 
         <nav style={{ display: 'flex', gap: '16px' }}>
           <Link href="/user_profile" style={{ color: 'white', textDecoration: 'none' }}>Profile</Link>
