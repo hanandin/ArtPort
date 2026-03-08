@@ -15,40 +15,61 @@ export default function Navbar() {
             backgroundColor: '#ffd29e',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             padding: '12px',
             gap: '16px'
         }}>
 
             {/* Logo */}
-            <Link
-                href="/"
-                style={{
+            <div style={{ flex: 1 }}>
+                <Link href="/" style={{
                     color: '#ffffff',
                     fontWeight: 'bold',
                     fontSize: '24px',
                     whiteSpace: 'nowrap'
-                }}
-            >
-                ArtPort
-            </Link>
+                }}>
+                    ArtPort
+                </Link>
+            </div>
 
 
             {/* Search bar container */}
             <div style={{
                 flex: 1,
-                maxWidth: '500px'
+                display: 'flex',
+                justifyContent: 'center'
             }}>
-                <SearchBar
-                    placeholder="Search artwork..."
-                    onSearch={handleSearch}
-                />
+                <div style={{
+                    width: '100%',
+                    maxWidth: '500px'
+                }}>
+                    <SearchBar placeholder="Search artwork..." onSearch={handleSearch} />
+                </div>
             </div>
 
 
-            {/* Profile dropdown */}
-            <div style={{ position: 'relative' }}>
+            {/* Upload Profile and profile button wrapper*/}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '16px' }}>
 
+                {/* Upload button */}
+                <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    border: '2px solid #ffffff',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    fontSize: '24px',
+                    fontWeight: '300',
+
+                }}>
+                    <Link href="/upload">+</Link>
+                </div>
+
+
+                {/* Profile menu */}
                 <div
                     onClick={() => setIsOpen(!isOpen)}
                     style={{
@@ -112,6 +133,20 @@ export default function Navbar() {
                             }}
                         >
                             Settings
+                        </Link>
+
+                        <Link
+                            href="/login"
+                            onClick={() => setIsOpen(false)}
+                            style={{
+                                color: '#f29f41',
+                                fontWeight: 'bold',
+                                textDecoration: 'none',
+                                display: 'block',
+                                padding: '8px'
+                            }}
+                        >
+                            Log out
                         </Link>
                     </div>
                 )}
