@@ -14,12 +14,20 @@ where you can enter your "username" and "password", which will be stored in the 
 	https://github.com/hanandin/ArtPort
 
 
+
 ---------------------------------------------------
 ||        Bug tracking system instructions       ||
 ---------------------------------------------------
-TODO:	Setup a bug-tracking system
-	File some of the bugs and/or currently missing features into that system.
-	"One issue must be listed per developer with suitable details such as to whom the bug is assigned and its priority."
+The bug-tracking system for this project uses a hybrid approach of collecting bug reports from users via Google Form
+and then transfering them to the GitHub Issues system, where we can assign developers responsible for each bug/issue,
+mark issues as "in progress/resolved", and other.
+
+The user can access the bug report form using the link below: 
+	https://forms.gle/1gqNdWcKkygg3MrG9
+
+The GitHub issues used by the developers team to track surrent issues/bugs of the project can be found using the link below:
+	https://github.com/hanandin/ArtPort/issues
+
 
 
 ---------------------------------------------------
