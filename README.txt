@@ -25,18 +25,5 @@ mark issues as "in progress/resolved", and other.
 The user can access the bug report form using the link below: 
 	https://forms.gle/1gqNdWcKkygg3MrG9
 
-The user submissions/reports can be accessed using the link below:
-	https://docs.google.com/spreadsheets/d/1nkkUDZA2Tb2TPzNm-qwEbzLho0K-f2F-JxwWzFNpkRY/edit?usp=sharing
-
 The GitHub issues used by the developers team to track surrent issues/bugs of the project can be found using the link below:
 	https://github.com/hanandin/ArtPort/issues
-
-
-
----------------------------------------------------
-||         Database access instructions          ||
----------------------------------------------------
-The database is stored on MongoDB. To access it, please use the link below:
-	TODO: add the link???
-
-TODO: add instructions for how to "perform one very simple query against [the database]"
