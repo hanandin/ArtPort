@@ -1,66 +1,110 @@
-import User from '../models/User.js';
+import User from "../models/User.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+// Generate JWT token
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "30d",
+  });
+};
 
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Public
 export const getUsers = async (req, res) => {
-    try {
-        const users = await User.find().select('-passwordHash');
-        res.json(users);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+  try {
+    const users = await User.find().select("-passwordHash");
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // @desc    Register a new user
 // @route   POST /api/users/register
 // @access  Public
 export const registerUser = async (req, res) => {
-    try {
-        const { username, email, password } = req.body;
+  try {
+    const { username, email, password } = req.body;
 
-        const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email });
 
-        if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
-
-        // MOCK PASSWORD HASHING for Alpha
-        const passwordHash = `hashed_${password}`;
-
-        const user = await User.create({
-            username,
-            email,
-            passwordHash
-        });
-
-        if (user) {
-            res.status(201).json({
-                _id: user._id,
-                username: user.username,
-                email: user.email
-            });
-        } else {
-            res.status(400).json({ message: 'Invalid user data' });
-        }
-    } catch (error) {
-        res.status(400).json({ message: error.message });
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
     }
+
+    // Hash password with bcrypt (10 salt rounds)
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const user = await User.create({
+      username,
+      email,
+      passwordHash,
+    });
+
+    if (user) {
+      res.status(201).json({
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        token: generateToken(user._id),
+      });
+    } else {
+      res.status(400).json({ message: "Invalid user data" });
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Login user
+// @route   POST /api/users/login
+// @access  Public
+export const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // Verify password with bcrypt
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    res.json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      bio: user.bio,
+      profilePictureUrl: user.profilePictureUrl,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // @desc    Get user profile
 // @route   GET /api/users/:id
 // @access  Public
 export const getUserProfile = async (req, res) => {
-    try {
-        const user = await User.findById(req.params.id).select('-passwordHash');
+  try {
+    const user = await User.findById(req.params.id).select("-passwordHash");
 
-        if (user) {
-            res.json(user);
-        } else {
-            res.status(404).json({ message: 'User not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ message: "User not found" });
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
