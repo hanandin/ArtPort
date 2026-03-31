@@ -2,7 +2,7 @@
 || Source control and build process instructions ||
 ---------------------------------------------------
 - To access the project's build, please use the link below:
-	https://hanandin.github.io/ArtPort/
+	https://ibrax2.github.io/ArtPort/ 
 
 The current version only supports the primitive log in system (entering a new username == register a new account),
 which can be accessed by clicking on the white circle in the top right corner of the main page 
@@ -11,7 +11,7 @@ where you can enter your "username" and "password", which will be stored in the 
 
 -------
 - To access the project's version control repository, please use the link below:
-	https://github.com/hanandin/ArtPort
+	https://github.com/ibrax2/ArtPort 
 
 
 
@@ -26,4 +26,4 @@ The user can access the bug report form using the link below:
 	https://forms.gle/1gqNdWcKkygg3MrG9
 
 The GitHub issues used by the developers team to track surrent issues/bugs of the project can be found using the link below:
-	https://github.com/hanandin/ArtPort/issues
+	https://github.com/ibrax2/ArtPort/issues 
