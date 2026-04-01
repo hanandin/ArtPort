@@ -1,6 +1,5 @@
 "use client";
 
-// TODO: Wire ProfileCard image callbacks to API — see docs/BACKEND_INTEGRATION.md
 import { useEffect, useState } from "react";
 
 import ProfileCard, {
@@ -13,6 +12,8 @@ type StoredUser = {
   _id?: string;
   username?: string;
   email?: string;
+  bio?: string;
+  profilePictureUrl?: string;
 };
 
 type ApiArtwork = {
@@ -21,8 +22,19 @@ type ApiArtwork = {
   filePath?: string;
   thumbnailPath?: string;
   imageUrl?: string;
-  userId?: string;
+  userId?:
+    | string
+    | { _id?: string; username?: string; profilePictureUrl?: string };
 };
+
+function artworkOwnerId(raw: ApiArtwork): string | undefined {
+  const u = raw.userId;
+  if (u == null) return undefined;
+  if (typeof u === "object" && "_id" in u && u._id != null) {
+    return String(u._id);
+  }
+  return String(u);
+}
 
 function mapUserArtworks(
   data: unknown,
@@ -32,7 +44,8 @@ function mapUserArtworks(
   const items: ProfilePostItem[] = [];
   for (const raw of data) {
     const a = raw as ApiArtwork;
-    if (a.userId == null || String(a.userId) !== String(userId)) continue;
+    const owner = artworkOwnerId(a);
+    if (owner == null || owner !== String(userId)) continue;
     const imageSrc =
       a.filePath || a.imageUrl || a.thumbnailPath || "";
     if (!imageSrc) continue;
@@ -47,6 +60,8 @@ function mapUserArtworks(
 
 export default function UserProfilePage() {
   const [username, setUsername] = useState("Artist");
+  const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
   const [userId, setUserId] = useState<string | undefined>(undefined);
   const [userPosts, setUserPosts] = useState<ProfilePostItem[]>([]);
 
@@ -57,9 +72,33 @@ export default function UserProfilePage() {
       const user = JSON.parse(raw) as StoredUser;
       if (user.username) setUsername(user.username);
       if (user._id) setUserId(String(user._id));
+      if (typeof user.bio === "string") setBio(user.bio);
+      if (user.profilePictureUrl) setAvatarUrl(user.profilePictureUrl);
     } catch {
     }
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    fetch(`${API_URL}/api/users/${encodeURIComponent(userId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: unknown) => {
+        if (cancelled || !data || typeof data !== "object") return;
+        const u = data as {
+          username?: string;
+          bio?: string;
+          profilePictureUrl?: string;
+        };
+        if (u.username) setUsername(u.username);
+        if (typeof u.bio === "string") setBio(u.bio);
+        if (u.profilePictureUrl) setAvatarUrl(u.profilePictureUrl);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -87,7 +126,8 @@ export default function UserProfilePage() {
     <main className="user-profile-main">
       <ProfileCard
         username={username}
-        bio="Welcome to your ArtPort profile."
+        bio={bio}
+        avatarSrc={avatarUrl}
         followers={0}
         following={0}
         posts={postCount}

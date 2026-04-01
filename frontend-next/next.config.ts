@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  basePath: "/ArtPort",  // Uncomment for GitHub Pages deployment
+  // output: "export",
+  // basePath: "/ArtPort",
   images: {
     unoptimized: true,
   },

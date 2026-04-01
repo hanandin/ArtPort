@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ArtIcon from "@/components/articon";
+import { publicAsset } from "@/lib/paths";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -24,30 +25,42 @@ type ApiArtwork = {
     profilePicture?: string;
     profilePictureUrl?: string;
   };
+  /** Populated from GET /api/artworks */
   userId?: {
     username?: string;
     profilePicture?: string;
     profilePictureUrl?: string;
+    _id?: string;
   } | string;
+  author?: {
+    username?: string;
+    profilePictureUrl?: string;
+  };
 };
 
 function mapArtworkToFeedPost(raw: ApiArtwork, index: number): FeedPost {
   const userObj =
     raw.user && typeof raw.user === "object"
       ? raw.user
-      : raw.userId && typeof raw.userId === "object"
-        ? raw.userId
-        : undefined;
+      : raw.author && typeof raw.author === "object"
+        ? raw.author
+        : raw.userId && typeof raw.userId === "object"
+          ? raw.userId
+          : undefined;
 
   return {
     id: raw._id ? String(raw._id) : `post-${index}`,
-    image: raw.imageUrl || raw.filePath || raw.thumbnailPath || "/images/artwork_1.jpg",
+    image:
+      raw.imageUrl ||
+      raw.filePath ||
+      raw.thumbnailPath ||
+      publicAsset("/images/artwork_1.jpg"),
     title: raw.title?.trim() || "Untitled",
     username: userObj?.username || "Unknown artist",
     userImage:
       userObj?.profilePictureUrl ||
       userObj?.profilePicture ||
-      "/avatar-default.svg",
+      publicAsset("/avatar-default.svg"),
   };
 }
 

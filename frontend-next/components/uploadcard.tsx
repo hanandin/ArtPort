@@ -127,12 +127,10 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
       return;
     }
     const formData = new FormData();
+    // Server: multer field name `image` (see server/src/routes/artworkRoutes.js)
     formData.append("image", selectedFile);
-    formData.append(
-      "thumbnailImage",
-      thumbnailBlob,
-      "thumbnail.jpg"
-    );
+    // Optional client-only crop; not used by current API (single file upload)
+    formData.append("thumbnailImage", thumbnailBlob, "thumbnail.jpg");
     if (userId) formData.append("userId", userId);
     formData.append("title", title.trim());
     if (description.trim()) formData.append("description", description.trim());

@@ -35,11 +35,16 @@ const LoginCard: React.FC = () => {
       }
 
       localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify({
-        _id: data._id,
-        username: data.username,
-        email: data.email,
-      }));
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          _id: data._id,
+          username: data.username,
+          email: data.email,
+          bio: data.bio,
+          profilePictureUrl: data.profilePictureUrl,
+        })
+      );
 
       router.push("/user_profile");
     } catch (err: any) {
@@ -69,11 +74,14 @@ const LoginCard: React.FC = () => {
       }
 
       localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify({
-        _id: data._id,
-        username: data.username,
-        email: data.email,
-      }));
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          _id: data._id,
+          username: data.username,
+          email: data.email,
+        })
+      );
 
       router.push("/user_profile");
     } catch (err: any) {
