@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Profile header, avatar/banner crop, posts grid. Cropped images are passed as Blob to optional callbacks.
+ * Backend wiring: see docs/BACKEND_INTEGRATION.md (pass `onAvatarImageChange` / `onBannerImageChange` from user_profile page).
+ */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import ImageCropModal from "@/components/profile/ImageCropModal";

@@ -11,6 +11,10 @@ import type {
   FeedbackFormConfig,
   FeedbackQuestion,
 } from "@/types/feedback";
+import {
+  buildResponseAnswers,
+  submitFeedbackResponse,
+} from "@/lib/feedbackApi";
 
 import styles from "./FeedbackFormCard.module.css";
 
@@ -25,6 +29,7 @@ function emptyAnswers(questions: FeedbackQuestion[]) {
 
 export type FeedbackFormCardProps = {
   config: FeedbackFormConfig;
+  remoteFormId?: string;
 };
 
 type FormOnSubmit = NonNullable<ComponentProps<"form">["onSubmit"]>;
@@ -39,12 +44,16 @@ function isQuestionAnswered(
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export default function FeedbackFormCard({ config }: FeedbackFormCardProps) {
+export default function FeedbackFormCard({
+  config,
+  remoteFormId,
+}: FeedbackFormCardProps) {
   const [answers, setAnswers] = useState(() =>
     emptyAnswers(config.questions)
   );
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const setRating = (id: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [id]: value }));
@@ -52,6 +61,11 @@ export default function FeedbackFormCard({ config }: FeedbackFormCardProps) {
   };
 
   const setRadio = (id: string, value: string) => {
+    setAnswers((prev) => ({ ...prev, [id]: value }));
+    setSubmitError("");
+  };
+
+  const setText = (id: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [id]: value }));
     setSubmitError("");
   };
@@ -79,7 +93,7 @@ export default function FeedbackFormCard({ config }: FeedbackFormCardProps) {
     [config.schemaVersion, answers]
   );
 
-  const handleSubmit: FormOnSubmit = (e) => {
+  const handleSubmit: FormOnSubmit = async (e) => {
     e.preventDefault();
     const missingRequired = config.questions.filter((q) => {
       if (!q.required) return false;
@@ -87,6 +101,36 @@ export default function FeedbackFormCard({ config }: FeedbackFormCardProps) {
     });
     if (missingRequired.length > 0) {
       setSubmitError("Please answer all required questions before submitting.");
+      return;
+    }
+
+    if (remoteFormId) {
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token")
+          : null;
+      if (!token) {
+        setSubmitError("Please log in to submit feedback.");
+        return;
+      }
+
+      const answersPayload = buildResponseAnswers(config, answers);
+      if (answersPayload.length === 0) {
+        setSubmitError("Please answer at least one question.");
+        return;
+      }
+
+      try {
+        setSubmitting(true);
+        setSubmitError("");
+        await submitFeedbackResponse(remoteFormId, answersPayload, token);
+        setSubmitted(true);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Submit failed";
+        setSubmitError(msg);
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
 
@@ -119,7 +163,11 @@ export default function FeedbackFormCard({ config }: FeedbackFormCardProps) {
 
       {submitted ? (
         <div className={styles.thanks} role="status">
-          <p className={styles.thanksText}>Thanks — your feedback was saved locally.</p>
+          <p className={styles.thanksText}>
+            {remoteFormId
+              ? "Thanks — your feedback was submitted."
+              : "Thanks — your feedback was saved locally."}
+          </p>
           <button
             type="button"
             className={styles.secondaryBtn}
@@ -206,6 +254,27 @@ export default function FeedbackFormCard({ config }: FeedbackFormCardProps) {
                 );
               }
 
+              if (q.type === "text") {
+                const v = answers[q.id];
+                const value = typeof v === "string" ? v : "";
+                return (
+                  <QuestionField
+                    key={q.id}
+                    label={q.label}
+                    detail={q.detail}
+                    required={q.required}
+                  >
+                    <textarea
+                      className={styles.textArea}
+                      rows={4}
+                      value={value}
+                      onChange={(ev) => setText(q.id, ev.target.value)}
+                      aria-required={q.required}
+                    />
+                  </QuestionField>
+                );
+              }
+
               return null;
             })}
           </div>
@@ -214,8 +283,12 @@ export default function FeedbackFormCard({ config }: FeedbackFormCardProps) {
           ) : null}
 
           <div className={styles.actions}>
-            <button type="submit" className={styles.primaryBtn}>
-              Submit feedback
+            <button
+              type="submit"
+              className={styles.primaryBtn}
+              disabled={submitting}
+            >
+              {submitting ? "Submitting…" : "Submit feedback"}
             </button>
           </div>
         </form>

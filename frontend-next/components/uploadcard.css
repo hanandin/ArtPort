@@ -22,6 +22,10 @@
   position: relative;
 }
 
+.upload-file-box-has-image {
+  cursor: default;
+}
+
 .upload-icon {
   width: 16rem;
   height: 20rem;
@@ -102,14 +106,97 @@
   background-color: #58b95a;
 }
 
+.upload-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.upload-submit-error {
+  margin: 0;
+  color: #991b1b;
+  font-size: 1.1rem;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  text-align: center;
+}
+
+.title-required {
+  color: #991b1b;
+}
+
+.upload-thumbnail-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.upload-thumbnail-label {
+  margin: 0;
+  font-family: Inter, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #2a241c;
+}
+
+.upload-thumb-preview-wrap {
+  width: min(300px, 85vw);
+  aspect-ratio: 1;
+  border-radius: 31px;
+  overflow: hidden;
+  border: 1px solid #1a1a1a;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  background: #d0bea9;
+}
+
+.upload-thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.upload-thumbnail-placeholder {
+  margin: 0;
+  max-width: 28rem;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: #5a4d3f;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+}
+
+.change-thumbnail-button {
+  background-color: #9a846a;
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+}
+
+.change-thumbnail-button:hover {
+  background-color: #8a755e;
+}
+
+.change-thumbnail-button:focus-visible {
+  outline: 2px solid #215a80;
+  outline-offset: 2px;
+}
+
 .hidden-input {
   display: none;
 }
 
-.preview-image {
+/* Full artwork in the box — same file as upload, not the cropped thumbnail */
+.preview-image-full {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  display: block;
 }
 
 .upload-below-box {

@@ -1,10 +1,5 @@
-import UploadCard from "../../components/uploadcard";
+import UploadPageClient from "./UploadPageClient";
 
-export default function Home() {
-  return (
-  <main className="upload-route">
-    <h1> Upload page </h1>
-    <UploadCard />
-  </main>
-  );
+export default function UploadPage() {
+  return <UploadPageClient />;
 }

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "title": "artwork feedback",
+  "description": "Tell us what you think about the artwork",
+  "selectPageTitle": "Choose questions for your feedback form",
+  "selectPageHint": "Uncheck any question you don't want on this form. The preview matches how they will look to respondents (answers are disabled here).",
+  "questions": [
+    {
+      "id": "overall_experience",
+      "type": "rating",
+      "label": "How sharp is the lineart in the artwork",
+      "detail": "Sharp Lineart is usually well defined, bleeds less\n blurry lineart usually is dull",
+      "required": true,
+      "min": 1,
+      "max": 5,
+      "stepLabels": ["Sharp", "", "", "", "Blurry"]
+    },
+    {
+      "id": "features_used",
+      "type": "checkbox",
+      "label": "What parts of the artwork you liked?",
+      "detail": "Select all that apply.",
+      "required": false,
+      "options": [
+        { "value": "lineart", "label": "Lineart" },
+        { "value": "composition", "label": "Composition" },
+        { "value": "color", "label": "Color Theory" },
+        { "value": "subject", "label": "Subject" }
+      ]
+    },
+    {
+      "id": "recommend",
+      "type": "radio",
+      "label": "What are some areas of improvement in this artwork",
+      "required": true,
+      "options": [
+        { "value": "lineart", "label": "Lineart" },
+        { "value": "composition", "label": "Maybe" },
+        { "value": "color", "label": "Color Theory" }
+      ]
+    },
+    {
+      "id": "improvement_focus",
+      "type": "radio",
+      "label": "What is the first feature of the artwork that stood out to you?",
+      "detail": "Composition is about the layout of the artwork and how the subjects of an artwork are arranged.\n ",
+      "required": false,
+      "options": [
+        { "value": "composition", "label": "Composition" },
+        { "value": "lineart", "label": "Lineart" },
+        { "value": "color", "label": "Colors/Color palette" },
+        { "value": "texture", "label": "Texture" }
+      ]
+    }
+  ]
+}

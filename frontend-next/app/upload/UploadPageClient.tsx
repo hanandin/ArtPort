@@ -1,0 +1,56 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import UploadCard from "@/components/uploadcard";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+export default function UploadPageClient() {
+  const router = useRouter();
+  const [userId, setUserId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (!raw) return;
+      const u = JSON.parse(raw) as { _id?: string };
+      if (u?._id) setUserId(u._id);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const onUpload = async (formData: FormData) => {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${API_URL}/api/artworks`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      message?: string;
+      _id?: string;
+    };
+    if (!res.ok) {
+      throw new Error(
+        typeof data.message === "string" ? data.message : "Upload failed"
+      );
+    }
+    const id = data._id;
+    if (!id) {
+      throw new Error("Upload succeeded but no artwork id was returned.");
+    }
+    router.push(
+      `/feedback/select?artworkId=${encodeURIComponent(String(id))}`
+    );
+  };
+
+  return (
+    <main className="upload-route">
+      <h1> Upload page </h1>
+      <UploadCard onUpload={onUpload} userId={userId} />
+    </main>
+  );
+}

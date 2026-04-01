@@ -1,5 +1,6 @@
 "use client";
 
+// TODO: Wire ProfileCard image callbacks to API — see docs/BACKEND_INTEGRATION.md
 import { useEffect, useState } from "react";
 
 import ProfileCard, {

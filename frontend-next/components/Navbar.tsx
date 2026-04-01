@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import SearchBar from "./searchbar";
+import { fetchSearchResults } from "@/lib/searchApi";
 
 export default function Navbar() {
     const router = useRouter()
@@ -67,6 +68,7 @@ export default function Navbar() {
                     <SearchBar
                         placeholder="Search artwork..."
                         onSearch={handleSearch}
+                        loadResults={fetchSearchResults}
                         onSelectResult={() => {}}
                     />
                 </div>

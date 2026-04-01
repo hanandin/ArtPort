@@ -40,3 +40,22 @@ export async function getCroppedImg(
 
   return canvas.toDataURL("image/jpeg", 0.92);
 }
+
+/** Convert a JPEG/PNG data URL from a crop to a Blob for FormData uploads. */
+export function dataUrlToBlob(dataUrl: string): Blob | null {
+  const parts = dataUrl.split(",");
+  if (parts.length !== 2) return null;
+  const match = parts[0].match(/data:(.*);base64/);
+  const mime = match?.[1] ?? "image/jpeg";
+  try {
+    const binary = atob(parts[1]);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mime });
+  } catch {
+    return null;
+  }
+}
