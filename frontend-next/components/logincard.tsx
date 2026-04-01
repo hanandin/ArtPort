@@ -103,7 +103,7 @@ const LoginCard: React.FC = () => {
     <div className="w-full flex justify-center">
       <form onSubmit={handleSubmit} className={styles.loginContainer}>
         <h1 className={styles.loginText}>{isSignup ? "Sign Up" : "Login"}</h1>
-        
+
         {error && (
           <div className="text-red-600 text-center text-lg">{error}</div>
         )}
@@ -145,8 +145,8 @@ const LoginCard: React.FC = () => {
           required
         />
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className={styles.loginButton}
           disabled={loading}
         >

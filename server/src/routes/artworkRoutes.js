@@ -1,12 +1,12 @@
 import express from 'express';
 import { getArtworks, createArtwork, getArtworkById } from '../controllers/artworkController.js';
-import { upload, uploadToS3 } from '../middleware/upload.js';
+import { upload } from '../middleware/upload.js';
 
 const router = express.Router();
 
 router.route('/')
     .get(getArtworks)
-    .post(upload.single('image'), uploadToS3, createArtwork);
+    .post(upload.single('artworkImage'), createArtwork);
 
 router.route('/:id')
     .get(getArtworkById);

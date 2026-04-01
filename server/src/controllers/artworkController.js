@@ -1,11 +1,12 @@
 import Artwork from '../models/Artwork.js';
+import { uploadImageToS3 } from './imageUploadController.js';
 
 // @desc    Get all artworks
 // @route   GET /api/artworks
 // @access  Public
 export const getArtworks = async (req, res) => {
     try {
-        const artworks = await Artwork.find().populate('author', 'username profilePictureUrl');
+        const artworks = await Artwork.find().populate('userId', 'username profilePictureUrl');
         res.json(artworks);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -17,23 +18,23 @@ export const getArtworks = async (req, res) => {
 // @access  Private (Mocked for now)
 export const createArtwork = async (req, res) => {
     try {
-        const { title, description, author } = req.body;
-        let imageUrl = req.body.imageUrl;
-
-        // Use S3 URL if a file was uploaded
-        if (req.file && req.file.location) {
-            imageUrl = req.file.location;
+        const { title, description, userId } = req.body;
+        
+        // Handle image upload through imageUploadController
+        let filePath = req.body.filePath;
+        if (req.file) {
+            filePath = await uploadImageToS3(req.file, "artworks");
         }
 
-        if (!imageUrl) {
+        if (!filePath) {
             return res.status(400).json({ message: 'Image is required' });
         }
 
         const artwork = new Artwork({
             title,
             description,
-            imageUrl,
-            author
+            filePath,
+            userId
         });
 
         const createdArtwork = await artwork.save();
@@ -48,7 +49,7 @@ export const createArtwork = async (req, res) => {
 // @access  Public
 export const getArtworkById = async (req, res) => {
     try {
-        const artwork = await Artwork.findById(req.params.id).populate('author', 'username profilePictureUrl');
+        const artwork = await Artwork.findById(req.params.id).populate('userId', 'username profilePictureUrl');
 
         if (artwork) {
             res.json(artwork);

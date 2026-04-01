@@ -1,10 +1,27 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./uploadcard.module.css";
 
 export default function UploadCardExact() {
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>("");
+  const [title, setTitle] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get user from local storage
+    const user = localStorage.getItem("user");
+    if (user) {
+      const parsedUser = JSON.parse(user);
+      setUserId(parsedUser._id || parsedUser.id || null);
+    }
+  }, []);
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -14,8 +31,8 @@ export default function UploadCardExact() {
       img.src = URL.createObjectURL(selectedFile);
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const maxWidth = 777; 
-        const maxHeight = 856; 
+        const maxWidth = 777;
+        const maxHeight = 856;
         let { width, height } = img;
 
         if (width > maxWidth || height > maxHeight) {
@@ -42,6 +59,49 @@ export default function UploadCardExact() {
     const input = document.getElementById("fileInput");
     input?.click();
   };
+
+  const handleUpload = async () => {
+    if (!file) {
+      setError("Please select an image to upload.");
+      return;
+    }
+    if (!title.trim()) {
+      setError("Please provide a title.");
+      return;
+    }
+    if (!userId) {
+      setError("You must be logged in to upload artwork.");
+      return;
+    }
+
+    setIsUploading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("artworkImage", file);
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("userId", userId);
+
+      const response = await fetch("http://localhost:5000/api/artworks", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to upload artwork");
+      }
+
+      // Success
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message);
+      setIsUploading(false);
+    }
+  };
+
 
   return (
     <div className={styles.uploadContainer}>
@@ -75,6 +135,8 @@ export default function UploadCardExact() {
           type="text"
           className={styles.textInput}
           placeholder="Enter title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
         />
       </div>
 
@@ -87,13 +149,25 @@ export default function UploadCardExact() {
           id="description"
           className={styles.textareaInput}
           placeholder="Enter description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
         />
       </div>
 
+      {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
+
       {/* Buttons */}
       <div className={styles.buttonRow}>
-        <button className={styles.uploadButton}>Upload</button>
-        <button className={styles.cancelButton}>Cancel</button>
+        <button
+          className={styles.uploadButton}
+          onClick={handleUpload}
+          disabled={isUploading}
+        >
+          {isUploading ? "Uploading..." : "Upload"}
+        </button>
+        <button className={styles.cancelButton} onClick={() => router.push("/")}>
+          Cancel
+        </button>
       </div>
     </div>
   );
