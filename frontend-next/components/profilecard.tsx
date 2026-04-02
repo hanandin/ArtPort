@@ -33,6 +33,10 @@ const LS_AVATAR = "artport_profile_avatar";
 export const PROFILE_LS_BANNER = "artport_profile_banner";
 const BANNER_ASPECT = 935 / 323;
 
+function isRemoteImageUrl(s: string | undefined): s is string {
+  return typeof s === "string" && /^https?:\/\//i.test(s.trim());
+}
+
 function dataUrlToBlob(dataUrl: string): Blob | null {
   const parts = dataUrl.split(",");
   if (parts.length !== 2) return null;
@@ -87,12 +91,26 @@ export default function ProfileCard({
     try {
       const storedAvatar = localStorage.getItem(LS_AVATAR);
       const storedBanner = localStorage.getItem(PROFILE_LS_BANNER);
-      if (storedAvatar) setAvatarSrc(storedAvatar);
-      else if (avatarSrcProp) setAvatarSrc(avatarSrcProp);
-      if (enableBannerEdit && storedBanner) setBannerSrc(storedBanner);
-      else setBannerSrc(bannerUrlProp ?? null);
+
+      if (isRemoteImageUrl(avatarSrcProp)) {
+        setAvatarSrc(avatarSrcProp);
+      } else if (storedAvatar) {
+        setAvatarSrc(storedAvatar);
+      } else if (avatarSrcProp) {
+        setAvatarSrc(avatarSrcProp);
+      } else {
+        setAvatarSrc(DEFAULT_AVATAR);
+      }
+
+      if (isRemoteImageUrl(bannerUrlProp)) {
+        setBannerSrc(bannerUrlProp);
+      } else if (enableBannerEdit && storedBanner) {
+        setBannerSrc(storedBanner);
+      } else {
+        setBannerSrc(bannerUrlProp ?? null);
+      }
     } catch {
-      if (avatarSrcProp) setAvatarSrc(avatarSrcProp);
+      setAvatarSrc(avatarSrcProp ?? DEFAULT_AVATAR);
       setBannerSrc(bannerUrlProp ?? null);
     }
   }, [avatarSrcProp, bannerUrlProp, isOwnProfile, enableBannerEdit]);
@@ -165,6 +183,7 @@ export default function ProfileCard({
             src={bannerSrc}
             alt=""
             className="banner_image"
+            referrerPolicy="no-referrer"
           />
         ) : null}
         {isOwnProfile && enableBannerEdit ? (
@@ -187,6 +206,13 @@ export default function ProfileCard({
             width={200}
             height={200}
             className="profile_pfp_image"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const el = e.currentTarget;
+              // Avoid infinite loop if default avatar also fails to load
+              if (el.src.includes("avatar-default.svg")) return;
+              el.src = DEFAULT_AVATAR;
+            }}
           />
           {isOwnProfile ? (
             <button

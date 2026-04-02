@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { publicAsset } from "@/lib/paths";
-import { resolveApiAssetUrl } from "@/lib/artworkApi";
+import { FEED_ARTWORK_PLACEHOLDER, resolveApiAssetUrl } from "@/lib/artworkApi";
 import type { FeedPost } from "@/types/feed";
 
-const PLACEHOLDER_ART = publicAsset("/images/artwork_1.jpg");
 const PLACEHOLDER_AVATAR = publicAsset("/avatar-default.svg");
 
 export default function ArtIcon({ post }: { post: FeedPost }) {
@@ -47,7 +46,9 @@ export default function ArtIcon({ post }: { post: FeedPost }) {
         referrerPolicy="no-referrer"
         onError={(e) => {
           const el = e.currentTarget;
-          if (el.src !== PLACEHOLDER_ART) el.src = PLACEHOLDER_ART;
+          if (el.src !== FEED_ARTWORK_PLACEHOLDER) {
+            el.src = FEED_ARTWORK_PLACEHOLDER;
+          }
         }}
       />
 

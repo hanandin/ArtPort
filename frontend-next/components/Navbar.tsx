@@ -89,7 +89,10 @@ export default function Navbar() {
                         loadResults={fetchSearchResults}
                         onSelectResult={(item: SearchResultItem) => {
                             if (item.type === "artist") {
-                                router.push(`/user_profile/${encodeURIComponent(item.username)}`)
+                                const seg = item.username && item.username !== "Unknown"
+                                    ? item.username
+                                    : item.id
+                                router.push(`/user_profile/${encodeURIComponent(seg)}`)
                                 return
                             }
                             if (item.type === "artwork") {

@@ -11,15 +11,20 @@ export function normalizeArtworksList(data: unknown): unknown[] {
 }
 
 export function artworkImageUrl(raw: Record<string, unknown>): string {
+  if (raw == null || typeof raw !== "object") return "";
   const u =
     (raw.imageUrl as string | undefined) ||
     (raw.filePath as string | undefined) ||
-    (raw.thumbnailPath as string | undefined);
+    (raw.thumbnailPath as string | undefined) ||
+    (raw.url as string | undefined) ||
+    (raw.secure_url as string | undefined) ||
+    (typeof raw.image === "string" ? raw.image : undefined);
   return typeof u === "string" && u.trim() ? u.trim() : "";
 }
 
 export function artistIdFromArtworkRaw(raw: Record<string, unknown>): string | undefined {
-  const uid = raw.userId;
+  if (raw == null || typeof raw !== "object") return undefined;
+  const uid = raw.userId ?? raw.author;
   if (uid == null) return undefined;
   if (typeof uid === "object" && uid !== null && "_id" in uid) {
     const id = (uid as { _id?: unknown })._id;

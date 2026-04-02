@@ -5,7 +5,7 @@ import Artwork from '../models/Artwork.js';
 // @access  Public
 export const getArtworks = async (req, res) => {
     try {
-        const artworks = await Artwork.find().populate('author', 'username profilePictureUrl');
+        const artworks = await Artwork.find().populate('userId', 'username profilePictureUrl');
         res.json(artworks);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -32,8 +32,9 @@ export const createArtwork = async (req, res) => {
         const artwork = new Artwork({
             title,
             description,
-            imageUrl,
-            author
+            filePath: imageUrl,
+            userId: author,
+            thumbnailPath: req.body.thumbnailPath || "",
         });
 
         const createdArtwork = await artwork.save();
@@ -48,7 +49,7 @@ export const createArtwork = async (req, res) => {
 // @access  Public
 export const getArtworkById = async (req, res) => {
     try {
-        const artwork = await Artwork.findById(req.params.id).populate('author', 'username profilePictureUrl');
+        const artwork = await Artwork.findById(req.params.id).populate('userId', 'username profilePictureUrl');
 
         if (artwork) {
             res.json(artwork);

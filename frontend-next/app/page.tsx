@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 
 import ArtIcon from "@/components/articon";
 import FeedbackPageShell from "@/components/feedback/FeedbackPageShell";
-import { resolveApiAssetUrl } from "@/lib/artworkApi";
+import { FEED_ARTWORK_PLACEHOLDER, resolveApiAssetUrl } from "@/lib/artworkApi";
 import { publicAsset } from "@/lib/paths";
 import {
   normalizeArtworksList,
@@ -56,7 +56,7 @@ function mapArtworkToFeedPost(raw: ApiArtwork, index: number): FeedPost {
   return {
     id: raw._id != null ? String(raw._id) : `post-${index}`,
     slug,
-    image: img || publicAsset("/images/artwork_1.jpg"),
+    image: img || FEED_ARTWORK_PLACEHOLDER,
     title:
       typeof raw.title === "string" && raw.title.trim()
         ? raw.title.trim()
@@ -75,39 +75,31 @@ function HomeInner() {
   const feedbackAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const [posts, setPosts] = useState<FeedPost[]>([]);
-  const [feedError, setFeedError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${API_URL}/api/artworks`)
-      .then(async (res) => {
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/artworks`);
         const data = await res.json().catch(() => null);
         if (cancelled) return;
         if (!res.ok) {
-          const msg =
-            data &&
-            typeof data === "object" &&
-            typeof (data as { message?: string }).message === "string"
-              ? (data as { message: string }).message
-              : `Could not load feed (${res.status})`;
-          setFeedError(msg);
           setPosts([]);
           return;
         }
         const list = normalizeArtworksList(data);
-        const mapped = list.map((item, index) =>
-          mapArtworkToFeedPost(item as ApiArtwork, index)
-        );
-        setFeedError("");
+        const mapped = list
+          .filter(
+            (item): item is ApiArtwork =>
+              item != null && typeof item === "object"
+          )
+          .map((item, index) => mapArtworkToFeedPost(item, index));
         setPosts(mapped);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setFeedError("Network error — is the API running?");
-          setPosts([]);
-        }
-      });
+      } catch {
+        if (!cancelled) setPosts([]);
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -129,19 +121,13 @@ function HomeInner() {
     <main className="home-main">
       <h1 className="home-title">Front Page</h1>
 
-      {feedError ? (
-        <p style={{ color: "#b91c1c", maxWidth: 560, textAlign: "center" }}>
-          {feedError}
-        </p>
-      ) : null}
-
       <div className="feed-grid">
         {posts.map((post) => (
           <ArtIcon key={post.id} post={post} />
         ))}
       </div>
 
-      {!feedError && posts.length === 0 ? (
+      {posts.length === 0 ? (
         <p style={{ opacity: 0.8 }}>No artworks yet.</p>
       ) : null}
 

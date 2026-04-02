@@ -12,7 +12,11 @@ export default function UserProfileMePage() {
       const raw = localStorage.getItem("user");
       if (!raw) return;
       const u = JSON.parse(raw) as { _id?: string; username?: string };
-      if (u?.username) {
+      if (u?._id) {
+        router.replace(
+          `/user_profile/${encodeURIComponent(String(u._id))}`
+        );
+      } else if (u?.username) {
         router.replace(
           `/user_profile/${encodeURIComponent(String(u.username))}`
         );
@@ -30,7 +34,9 @@ export default function UserProfileMePage() {
           logging in
         </Link>
         , or use a direct link:{" "}
-        <code style={{ fontSize: 14 }}>/user_profile/&lt;username&gt;</code>
+        <code style={{ fontSize: 14 }}>
+          /user_profile/&lt;user id or username&gt;
+        </code>
       </p>
     </main>
   );

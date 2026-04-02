@@ -82,6 +82,12 @@ export default function FeedbackQuestionSelect({
       setSubmitting(true);
       const created = await createFeedbackForm(trimmedArtworkId, payload, token);
       const id = String(created._id);
+      try {
+        localStorage.setItem(
+          `artport_form_for_${trimmedArtworkId}`,
+          id
+        );
+      } catch { /* quota */ }
       router.push(`/?formId=${encodeURIComponent(id)}`);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Could not create form.");
@@ -217,6 +223,7 @@ function QuestionPreview({ q }: { q: FeedbackQuestion }) {
           disabled
           rows={4}
           aria-hidden
+          autoComplete="off"
           style={{
             width: "100%",
             borderRadius: 12,

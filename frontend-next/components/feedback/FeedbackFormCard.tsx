@@ -176,7 +176,11 @@ export default function FeedbackFormCard({
           </button>
         </div>
       ) : (
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form
+          className={styles.form}
+          onSubmit={handleSubmit}
+          autoComplete="off"
+        >
           <div className={styles.questions}>
             {config.questions.map((q) => {
               if (q.type === "rating") {
@@ -269,6 +273,9 @@ export default function FeedbackFormCard({
                       value={value}
                       onChange={(ev) => setText(q.id, ev.target.value)}
                       aria-required={q.required}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      name={`feedback-text-${q.id}`}
                     />
                   </QuestionField>
                 );

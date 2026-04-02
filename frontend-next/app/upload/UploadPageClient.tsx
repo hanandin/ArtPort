@@ -5,11 +5,45 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import UploadCard from "@/components/uploadcard";
+import {
+  ARTWORK_BODY_AUTHOR,
+  ARTWORK_BODY_USER_ID,
+} from "@/lib/serverApiContract";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const LAST_ARTWORK_ID_LS_KEY = "artport_last_artwork_id";
+
+function messageFromUploadError(
+  status: number,
+  parsed: unknown,
+  rawText: string
+): string {
+  if (parsed && typeof parsed === "object") {
+    const o = parsed as { message?: unknown; error?: unknown };
+    if (typeof o.message === "string" && o.message.trim()) return o.message.trim();
+    if (typeof o.error === "string" && o.error.trim()) return o.error.trim();
+  }
+  const t = rawText.trim();
+  if (t) {
+    return t.length > 400 ? `${t.slice(0, 400)}…` : t;
+  }
+  return `Upload failed (HTTP ${status})`;
+}
+
+const MONGO_ID_RE = /^[a-f\d]{24}$/i;
+
+function isMongoIdString(s: string): string | null {
+  const t = s.trim();
+  return MONGO_ID_RE.test(t) ? t : null;
+}
 
 function createdArtworkId(data: unknown): string | null {
-  if (!data || typeof data !== "object") return null;
+  if (data == null) return null;
+  if (typeof data === "string") return isMongoIdString(data);
+  if (Array.isArray(data) && data.length > 0) {
+    return createdArtworkId(data[0]);
+  }
+  if (typeof data !== "object") return null;
   const d = data as Record<string, unknown>;
   const raw = d._id ?? d.id;
   if (raw == null) return null;
@@ -20,9 +54,27 @@ function createdArtworkId(data: unknown): string | null {
   }
   if (typeof raw === "object" && raw !== null && "toString" in raw) {
     const s = String((raw as { toString: () => string }).toString());
-    if (s && !s.startsWith("[object ")) return s;
+    if (s && !s.startsWith("[object ")) return isMongoIdString(s) ?? s;
   }
   return null;
+}
+
+function extractArtworkIdFromRawBody(rawText: string): string | null {
+  const t = rawText.replace(/^\uFEFF/, "").trim();
+  if (!t) return null;
+  try {
+    const parsed = JSON.parse(t) as unknown;
+    const id = createdArtworkId(parsed);
+    if (id) return id;
+  } catch {
+  }
+  const m =
+    t.match(/"_id"\s*:\s*"([a-f\d]{24})"/i) ||
+    t.match(/"_id"\s*:\s*\{\s*"\$oid"\s*:\s*"([a-f\d]{24})"\s*\}/i) ||
+    t.match(/"id"\s*:\s*"([a-f\d]{24})"/i);
+  if (m?.[1]) return m[1];
+  const loose = t.match(/\b([a-f\d]{24})\b/i);
+  return loose?.[1] ?? null;
 }
 
 export default function UploadPageClient() {
@@ -36,7 +88,6 @@ export default function UploadPageClient() {
       const u = JSON.parse(raw) as { _id?: string };
       if (u?._id) setUserId(u._id);
     } catch {
-      /* ignore */
     }
   }, []);
 
@@ -56,8 +107,8 @@ export default function UploadPageClient() {
       throw new Error("Log in first so we can attach your artwork to your account.");
     }
 
-    formData.set("userId", String(uid));
-    formData.set("author", String(uid));
+    formData.set(ARTWORK_BODY_USER_ID, String(uid));
+    formData.set(ARTWORK_BODY_AUTHOR, String(uid));
 
     const token = localStorage.getItem("token");
     const res = await fetch(`${API_URL}/api/artworks`, {
@@ -65,22 +116,30 @@ export default function UploadPageClient() {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
-    const data = (await res.json().catch(() => (null))) as unknown;
+    const rawText = await res.text();
+    const normalized = rawText.replace(/^\uFEFF/, "");
+    let data: unknown = null;
+    if (normalized.trim()) {
+      try {
+        data = JSON.parse(normalized) as unknown;
+      } catch {
+        data = null;
+      }
+    }
     if (!res.ok) {
-      const err = data && typeof data === "object" ? (data as { message?: string }) : {};
       throw new Error(
-        typeof err.message === "string" ? err.message : "Upload failed"
+        messageFromUploadError(res.status, data, normalized)
       );
     }
-    const id = createdArtworkId(data);
+    let id =
+      createdArtworkId(data) ?? extractArtworkIdFromRawBody(normalized);
     if (!id) {
-      const hint =
-        data && typeof data === "object"
-          ? ` Response: ${JSON.stringify(data).slice(0, 200)}`
-          : "";
-      throw new Error(
-        `Upload succeeded but no artwork id was returned.${hint}`
-      );
+      router.push("/feedback/select");
+      return;
+    }
+    try {
+      localStorage.setItem(LAST_ARTWORK_ID_LS_KEY, String(id));
+    } catch {
     }
     router.push(
       `/feedback/select?artworkId=${encodeURIComponent(String(id))}`

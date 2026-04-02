@@ -3,12 +3,22 @@
 import React, { useRef, useState } from "react";
 
 import ImageCropModal from "@/components/profile/ImageCropModal";
-import { dataUrlToBlob } from "@/lib/cropImage";
+import {
+  ARTWORK_BODY_DESCRIPTION,
+  ARTWORK_BODY_THUMBNAIL_PATH,
+  ARTWORK_BODY_TITLE,
+  ARTWORK_BODY_USER_ID,
+  ARTWORK_FILE_FIELD,
+} from "@/lib/serverApiContract";
 
 const ACCEPT_IMAGES =
   "image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/heic,image/heif";
 
 const THUMB_ASPECT = 1;
+
+function dataUrlLooksValid(s: string): boolean {
+  return /^data:image\/[a-z0-9.+-]+;base64,/i.test(s.trim());
+}
 
 export type UploadCardProps = {
   onUpload?: (formData: FormData) => Promise<void> | void;
@@ -19,7 +29,6 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const [artworkDisplayUrl, setArtworkDisplayUrl] = useState("");
-  const [thumbnailBlob, setThumbnailBlob] = useState<Blob | null>(null);
   const [thumbnailDisplayUrl, setThumbnailDisplayUrl] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -43,20 +52,16 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
     if (!file) return;
 
     revokeFullImageUrl();
-    setThumbnailBlob(null);
     setThumbnailDisplayUrl("");
 
     setSelectedFile(file);
     const url = URL.createObjectURL(file);
     fullImageUrlRef.current = url;
     setArtworkDisplayUrl(url);
-    setRawImageSrc(url);
     e.target.value = "";
   };
 
   const handleCropApply = (dataUrl: string) => {
-    const blob = dataUrlToBlob(dataUrl);
-    if (blob) setThumbnailBlob(blob);
     setThumbnailDisplayUrl(dataUrl);
     setRawImageSrc(null);
     setAdjustingThumbnail(false);
@@ -71,7 +76,6 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
     }
     revokeFullImageUrl();
     setSelectedFile(null);
-    setThumbnailBlob(null);
     setThumbnailDisplayUrl("");
     setRawImageSrc(null);
   };
@@ -90,7 +94,6 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
 
   const handleReselectPhoto = () => {
     revokeFullImageUrl();
-    setThumbnailBlob(null);
     setThumbnailDisplayUrl("");
     setSelectedFile(null);
     setRawImageSrc(null);
@@ -107,10 +110,6 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
       setSubmitError("Please upload a photo.");
       return;
     }
-    if (!thumbnailBlob) {
-      setSubmitError("Please complete the square thumbnail crop.");
-      return;
-    }
     if (!title.trim()) {
       setSubmitError("Title is required.");
       return;
@@ -119,14 +118,24 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
       return;
     }
     const formData = new FormData();
-    formData.append("artworkImage", selectedFile);
-    if (userId) formData.append("userId", userId);
-    formData.append("title", title.trim());
-    if (description.trim()) formData.append("description", description.trim());
+    formData.append(ARTWORK_FILE_FIELD, selectedFile);
+    if (userId) formData.append(ARTWORK_BODY_USER_ID, userId);
+    formData.append(ARTWORK_BODY_TITLE, title.trim());
+    if (description.trim()) {
+      formData.append(ARTWORK_BODY_DESCRIPTION, description.trim());
+    }
+    if (thumbnailDisplayUrl && dataUrlLooksValid(thumbnailDisplayUrl)) {
+      // Text payload keeps compatibility with backend routes that use upload.single("image").
+      formData.append(ARTWORK_BODY_THUMBNAIL_PATH, thumbnailDisplayUrl);
+    }
 
     try {
       setSubmitting(true);
       await onUpload(formData);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Upload failed. Try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -134,7 +143,6 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
 
   const handleCancel = () => {
     revokeFullImageUrl();
-    setThumbnailBlob(null);
     setThumbnailDisplayUrl("");
     setSelectedFile(null);
     setRawImageSrc(null);
@@ -148,7 +156,7 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
   };
 
   const canSubmit = Boolean(
-    selectedFile && thumbnailBlob && title.trim().length > 0 && onUpload
+    selectedFile && title.trim().length > 0 && onUpload
   );
 
   return (
@@ -200,22 +208,22 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
       </div>
 
       <div className="upload-thumbnail-section">
-        <p className="upload-thumbnail-label">Feed thumbnail (square crop)</p>
+        <p className="upload-thumbnail-label">Optional square crop (preview only)</p>
         {thumbnailDisplayUrl ? (
           <div className="upload-thumb-preview-wrap">
             <img
               src={thumbnailDisplayUrl}
-              alt="Thumbnail preview for feed"
+              alt="Crop preview"
               className="upload-thumbnail-img"
             />
           </div>
         ) : artworkDisplayUrl ? (
           <p className="upload-thumbnail-placeholder">
-            Finish the crop dialog to see your thumbnail here.
+            Upload uses your full image. Crop here if you want a square preview.
           </p>
         ) : (
           <p className="upload-thumbnail-placeholder">
-            Upload a photo and crop a square thumbnail to see it here.
+            After you choose a photo, you can crop a square preview (optional).
           </p>
         )}
         {artworkDisplayUrl ? (
@@ -224,7 +232,7 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
             className="change-thumbnail-button"
             onClick={handleChangeThumbnail}
           >
-            {thumbnailDisplayUrl ? "Change thumbnail" : "Crop thumbnail"}
+            {thumbnailDisplayUrl ? "Change crop preview" : "Crop preview"}
           </button>
         ) : null}
       </div>
@@ -249,15 +257,18 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
       </div>
 
       <div className="description-box">
-        <label htmlFor="description" className="description-label">
+        <label htmlFor="artwork-description" className="description-label">
           Description (optional)
         </label>
         <textarea
-          id="description"
+          id="artwork-description"
+          name="artwork-description"
           className="textarea-input"
           placeholder="Enter description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          autoComplete="off"
+          autoCorrect="off"
         />
       </div>
 
@@ -292,8 +303,8 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
           cropShape="rect"
           title={
             adjustingThumbnail
-              ? "Adjust thumbnail (square crop)"
-              : "Choose thumbnail (square crop)"
+              ? "Adjust square crop"
+              : "Square crop (optional preview)"
           }
           onApply={handleCropApply}
           onCancel={handleCropCancel}

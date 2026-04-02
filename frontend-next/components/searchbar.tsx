@@ -8,7 +8,7 @@ import {
   type KeyboardEvent,
 } from "react";
 
-import { resolveApiAssetUrl } from "@/lib/artworkApi";
+import { FEED_ARTWORK_PLACEHOLDER, resolveApiAssetUrl } from "@/lib/artworkApi";
 import { publicAsset } from "@/lib/paths";
 import type { SearchResultItem } from "@/lib/searchApi";
 
@@ -32,7 +32,7 @@ export default function SearchBar({
   const SEARCH_ICON_SRC = publicAsset("/search_icon.svg");
   const DROPDOWN_ARROW_SRC = publicAsset("/dropdown_arrow.svg");
   const DEFAULT_AVATAR_SRC = publicAsset("/avatar-default.svg");
-  const DEFAULT_ARTWORK_SRC = publicAsset("/images/artwork_1.jpg");
+  const DEFAULT_ARTWORK_SRC = FEED_ARTWORK_PLACEHOLDER;
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("Title");
@@ -192,7 +192,12 @@ export default function SearchBar({
                   key={item.id}
                   type="button"
                   className="search-result-item"
-                  onClick={() => onSelectResult(item)}
+                  onClick={() => {
+                    onSelectResult(item);
+                    setQuery("");
+                    setInternalResults([]);
+                    setFetchError("");
+                  }}
                 >
                   <img
                     src={item.profilePictureUrl || DEFAULT_AVATAR_SRC}
@@ -208,7 +213,12 @@ export default function SearchBar({
                   key={item.id}
                   type="button"
                   className="search-result-item"
-                  onClick={() => onSelectResult(item)}
+                  onClick={() => {
+                    onSelectResult(item);
+                    setQuery("");
+                    setInternalResults([]);
+                    setFetchError("");
+                  }}
                 >
                   <img
                     src={

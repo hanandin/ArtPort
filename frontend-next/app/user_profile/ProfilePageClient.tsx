@@ -1,21 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import ProfileCard, {
-  PROFILE_LS_BANNER,
-  type ProfilePostItem,
-} from "@/components/profilecard";
+import ProfileCard, { type ProfilePostItem } from "@/components/profilecard";
 import { resolveApiAssetUrl } from "@/lib/artworkApi";
+import { normalizeArtworksList } from "@/lib/artworksNormalize";
 import {
   fetchUserProfileLookup,
-  patchUserProfile,
   type ApiUserProfile,
 } from "@/lib/userProfileApi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+/** Mirrors GET /api/artworks — backend may use author + imageUrl and/or userId + filePath. */
 type ApiArtwork = {
   _id: string;
   title?: string;
@@ -23,16 +21,15 @@ type ApiArtwork = {
   filePath?: string;
   thumbnailPath?: string;
   imageUrl?: string;
-  userId?:
-    | string
-    | { _id?: string; username?: string; profilePictureUrl?: string };
+  author?: string | { _id?: string; username?: string; profilePictureUrl?: string };
+  userId?: string | { _id?: string; username?: string; profilePictureUrl?: string };
 };
 
 function artworkOwnerId(raw: ApiArtwork): string | undefined {
-  const u = raw.userId;
+  const u = raw.author ?? raw.userId;
   if (u == null) return undefined;
-  if (typeof u === "object" && "_id" in u && u._id != null) {
-    return String(u._id);
+  if (typeof u === "object" && u !== null && "_id" in u && (u as { _id?: unknown })._id != null) {
+    return String((u as { _id: unknown })._id);
   }
   return String(u);
 }
@@ -41,14 +38,16 @@ function mapUserArtworks(
   data: unknown,
   userId: string | undefined
 ): ProfilePostItem[] {
-  if (!Array.isArray(data) || !userId) return [];
+  const arr = normalizeArtworksList(data);
+  if (arr.length === 0 || !userId) return [];
+  const data_ = arr;
   const items: ProfilePostItem[] = [];
-  for (const raw of data) {
+  for (const raw of data_) {
     const a = raw as ApiArtwork;
     const owner = artworkOwnerId(a);
     if (owner == null || owner !== String(userId)) continue;
     const imageSrc =
-      a.filePath || a.imageUrl || a.thumbnailPath || "";
+      a.imageUrl || a.filePath || a.thumbnailPath || "";
     if (!imageSrc) continue;
     items.push({
       id: String(a._id),
@@ -88,9 +87,10 @@ export default function ProfilePageClient({ profileHandle }: Props) {
   const [userPosts, setUserPosts] = useState<ProfilePostItem[]>([]);
   const [loadError, setLoadError] = useState("");
   const [avatarError, setAvatarError] = useState("");
-  const [avatarUploading, setAvatarUploading] = useState(false);
   const [bannerError, setBannerError] = useState("");
-  const [bannerUploading, setBannerUploading] = useState(false);
+
+  const avatarBlobRef = useRef<string | null>(null);
+  const bannerBlobRef = useRef<string | null>(null);
 
   const myId = readStoredUserId();
   const isOwn = Boolean(
@@ -98,35 +98,47 @@ export default function ProfilePageClient({ profileHandle }: Props) {
   );
 
   const applyProfile = useCallback((u: ApiUserProfile) => {
+    if (avatarBlobRef.current) {
+      URL.revokeObjectURL(avatarBlobRef.current);
+      avatarBlobRef.current = null;
+    }
+    if (bannerBlobRef.current) {
+      URL.revokeObjectURL(bannerBlobRef.current);
+      bannerBlobRef.current = null;
+    }
     if (u.username) setUsername(u.username);
     if (typeof u.bio === "string") setBio(u.bio);
     setAvatarUrl(u.profilePictureUrl || undefined);
-    setBannerUrl(u.bannerPictureUrl || undefined);
+    setBannerUrl(undefined);
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     setLoadError("");
     setResolvedUserId(null);
-    fetchUserProfileLookup(profileHandle).then((data) => {
-      if (cancelled) return;
-      if (!data || !data._id) {
-        setLoadError("Profile not found.");
-        setUsername("Unknown user");
-        return;
-      }
-      const id = String(data._id);
-      setResolvedUserId(id);
-      applyProfile(data);
-      const uname = data.username?.trim();
-      if (
-        uname &&
-        /^[a-f\d]{24}$/i.test(profileHandle.trim()) &&
-        profileHandle.trim() !== uname
-      ) {
-        router.replace(`/user_profile/${encodeURIComponent(uname)}`);
-      }
-    });
+    fetchUserProfileLookup(profileHandle)
+      .then((data) => {
+        if (cancelled) return;
+        if (!data || !data._id) {
+          setLoadError("Profile not found.");
+          setUsername("Unknown user");
+          return;
+        }
+        const id = String(data._id);
+        setResolvedUserId(id);
+        applyProfile(data);
+        const uname = data.username?.trim();
+        if (
+          uname &&
+          /^[a-f\d]{24}$/i.test(profileHandle.trim()) &&
+          profileHandle.trim() !== uname
+        ) {
+          router.replace(`/user_profile/${encodeURIComponent(uname)}`);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError("Could not load profile.");
+      });
     return () => {
       cancelled = true;
     };
@@ -149,63 +161,45 @@ export default function ProfilePageClient({ profileHandle }: Props) {
     };
   }, [resolvedUserId]);
 
+  /** No PATCH /api/users on server — keep preview locally (ProfileCard also persists to localStorage). */
   const handleAvatarUpload = async (blob: Blob) => {
     if (!isOwn || !resolvedUserId) return;
     setAvatarError("");
-    setAvatarUploading(true);
     try {
-      const updated = await patchUserProfile(resolvedUserId, {
-        profilePicture: blob,
-      });
-      applyProfile(updated);
-      try {
-        localStorage.removeItem("artport_profile_avatar");
-        const prev = localStorage.getItem("user");
-        const parsed = prev ? (JSON.parse(prev) as Record<string, unknown>) : {};
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            ...parsed,
-            profilePictureUrl: updated.profilePictureUrl,
-          })
-        );
-      } catch {
+      if (avatarBlobRef.current) {
+        URL.revokeObjectURL(avatarBlobRef.current);
+        avatarBlobRef.current = null;
       }
+      const url = URL.createObjectURL(blob);
+      avatarBlobRef.current = url;
+      setAvatarUrl(url);
     } catch (e) {
-      setAvatarError(e instanceof Error ? e.message : "Photo upload failed");
-    } finally {
-      setAvatarUploading(false);
+      setAvatarError(e instanceof Error ? e.message : "Photo update failed");
     }
   };
 
   const handleBannerUpload = async (blob: Blob) => {
     if (!isOwn || !resolvedUserId) return;
     setBannerError("");
-    setBannerUploading(true);
     try {
-      const updated = await patchUserProfile(resolvedUserId, {
-        bannerPicture: blob,
-      });
-      applyProfile(updated);
-      try {
-        localStorage.removeItem(PROFILE_LS_BANNER);
-        const prev = localStorage.getItem("user");
-        const parsed = prev ? (JSON.parse(prev) as Record<string, unknown>) : {};
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            ...parsed,
-            bannerPictureUrl: updated.bannerPictureUrl,
-          })
-        );
-      } catch {
+      if (bannerBlobRef.current) {
+        URL.revokeObjectURL(bannerBlobRef.current);
+        bannerBlobRef.current = null;
       }
+      const url = URL.createObjectURL(blob);
+      bannerBlobRef.current = url;
+      setBannerUrl(url);
     } catch (e) {
-      setBannerError(e instanceof Error ? e.message : "Banner upload failed");
-    } finally {
-      setBannerUploading(false);
+      setBannerError(e instanceof Error ? e.message : "Banner update failed");
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (avatarBlobRef.current) URL.revokeObjectURL(avatarBlobRef.current);
+      if (bannerBlobRef.current) URL.revokeObjectURL(bannerBlobRef.current);
+    };
+  }, []);
 
   return (
     <main className="user-profile-main">
@@ -217,26 +211,18 @@ export default function ProfilePageClient({ profileHandle }: Props) {
           {avatarError}
         </p>
       ) : null}
-      {isOwn && avatarUploading ? (
-        <p style={{ marginBottom: 12, fontSize: 14, opacity: 0.85 }}>
-          Uploading new photo…
-        </p>
-      ) : null}
       {bannerError ? (
         <p style={{ color: "#b91c1c", marginBottom: 12 }} role="alert">
           {bannerError}
-        </p>
-      ) : null}
-      {isOwn && bannerUploading ? (
-        <p style={{ marginBottom: 12, fontSize: 14, opacity: 0.85 }}>
-          Uploading new banner…
         </p>
       ) : null}
 
       <ProfileCard
         username={username}
         bio={bio}
-        avatarSrc={avatarUrl}
+        avatarSrc={
+          avatarUrl ? resolveApiAssetUrl(avatarUrl) || avatarUrl : undefined
+        }
         bannerUrl={
           bannerUrl ? resolveApiAssetUrl(bannerUrl) || bannerUrl : undefined
         }
