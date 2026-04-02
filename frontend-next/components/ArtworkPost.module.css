@@ -23,15 +23,14 @@
 .leftColumn {
   display: flex;
   flex-direction: column;
-  width: 750px;
+  width: 800px;
   flex-shrink: 0;
 }
 
-/* Left column - feedback open state (narrower) */
 .leftColumnNarrow {
   display: flex;
   flex-direction: column;
-  width: 750px;
+  width: 800px;
   flex-shrink: 0;
 }
 
@@ -60,7 +59,8 @@
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  background: #e8e8e8;
+  background: #f3e1cf;
+  border: 3px solid #c9b297;
   width: 350px;
   height: 60px;
   box-sizing: border-box;
@@ -70,6 +70,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -78,7 +79,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #a2a2a2;
+  background: #ffffff;
   flex-shrink: 0;
 }
 
@@ -103,7 +104,8 @@
   width: 100%;
   margin-top: 24px;
   padding: 32px 16px;
-  background: #ccc8c8;
+  background: #f3e1cf;
+  border: 3px solid #c9b297;
   box-sizing: border-box;
   padding-bottom: 48px;
 }
