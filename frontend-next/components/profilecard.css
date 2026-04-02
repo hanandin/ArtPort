@@ -62,7 +62,6 @@
   outline-offset: 2px;
 }
 
-/* Pull avatar up so ~half sits on banner */
 .profile_header_row {
   display: flex;
   flex-direction: row;
@@ -93,23 +92,33 @@
   display: block;
 }
 
-.edit_avatar_btn {
+.profile_change_photo_btn {
   position: absolute;
-  bottom: 6px;
-  right: 6px;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 3;
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 999px;
   border: none;
   cursor: pointer;
-  font-size: 0.7rem;
-  background: rgba(0, 0, 0, 0.5);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-family: var(--font-geist-sans), Inter, system-ui, sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
 }
 
-.edit_avatar_btn:hover {
-  background: rgba(0, 0, 0, 0.65);
+.profile_change_photo_btn:hover {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.profile_change_photo_btn:focus-visible {
+  outline: 2px solid #215a80;
+  outline-offset: 2px;
 }
 
 .profile_text_block {
@@ -164,7 +173,6 @@
   white-space: nowrap;
 }
 
-/* Gradient panel: folders + posts */
 .separation {
   width: 746px;
   max-width: calc(100% - 4rem);

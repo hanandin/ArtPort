@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import QuestionField from "@/components/questions/QuestionField";
@@ -24,6 +24,7 @@ export default function FeedbackQuestionSelect({
   config,
   initialArtworkId = "",
 }: Props) {
+  const router = useRouter();
   const ids = useMemo(
     () => config.questions.map((q) => q.id),
     [config.questions]
@@ -55,7 +56,6 @@ export default function FeedbackQuestionSelect({
 
   const handleCreate = async () => {
     setError("");
-    setCreatedFormId(null);
 
     const token =
       typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -81,7 +81,8 @@ export default function FeedbackQuestionSelect({
     try {
       setSubmitting(true);
       const created = await createFeedbackForm(trimmedArtworkId, payload, token);
-      setCreatedFormId(String(created._id));
+      const id = String(created._id);
+      router.push(`/?formId=${encodeURIComponent(id)}`);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Could not create form.");
     } finally {
@@ -107,15 +108,6 @@ export default function FeedbackQuestionSelect({
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}
-
-      {createdFormId ? (
-        <p className={styles.success} role="status">
-          Form created.{" "}
-          <Link href={`/feedback?formId=${createdFormId}`}>
-            Open feedback page for this form
-          </Link>
-        </p>
-      ) : null}
 
       <div className={styles.actions}>
         <button

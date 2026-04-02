@@ -15,9 +15,10 @@ import styles from "@/app/feedback/feedback.module.css";
 
 const staticConfig = feedbackConfig as FeedbackFormConfig;
 
-function FeedbackPageInner() {
+function FeedbackPageInner({ embedded }: { embedded?: boolean }) {
   const searchParams = useSearchParams();
   const formId = searchParams.get("formId")?.trim() || "";
+  const Root = embedded ? "div" : "main";
 
   const [apiConfig, setApiConfig] = useState<FeedbackFormConfig | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -59,15 +60,15 @@ function FeedbackPageInner() {
 
   if (formId && loading) {
     return (
-      <main className={styles.main}>
+      <Root className={styles.main}>
         <p>Loading feedback form…</p>
-      </main>
+      </Root>
     );
   }
 
   if (formId && loadError) {
     return (
-      <main className={styles.main}>
+      <Root className={styles.main}>
         <p style={{ color: "#b91c1c" }}>{loadError}</p>
         <p style={{ marginTop: 8, fontSize: 14, opacity: 0.8 }}>
           You must be logged in as the form owner to load this form for now, or
@@ -76,26 +77,30 @@ function FeedbackPageInner() {
           <code style={{ fontSize: 13 }}>formId</code> to use the local demo
           form.
         </p>
-      </main>
+      </Root>
     );
   }
 
   if (formId && apiConfig) {
     return (
-      <main className={styles.main}>
+      <Root className={styles.main}>
         <FeedbackFormCard config={apiConfig} remoteFormId={formId} />
-      </main>
+      </Root>
     );
   }
 
   return (
-    <main className={styles.main}>
+    <Root className={styles.main}>
       <FeedbackFormCard config={staticConfig} />
-    </main>
+    </Root>
   );
 }
 
-export default function FeedbackPageShell() {
+export type FeedbackPageShellProps = { embedded?: boolean };
+
+export default function FeedbackPageShell({
+  embedded = false,
+}: FeedbackPageShellProps) {
   return (
     <Suspense
       fallback={
@@ -104,7 +109,7 @@ export default function FeedbackPageShell() {
         </main>
       }
     >
-      <FeedbackPageInner />
+      <FeedbackPageInner embedded={embedded} />
     </Suspense>
   );
 }

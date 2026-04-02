@@ -191,7 +191,6 @@
   display: none;
 }
 
-/* Full artwork in the box — same file as upload, not the cropped thumbnail */
 .preview-image-full {
   width: 100%;
   height: 100%;

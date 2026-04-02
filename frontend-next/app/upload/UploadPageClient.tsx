@@ -8,6 +8,23 @@ import UploadCard from "@/components/uploadcard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+function createdArtworkId(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const d = data as Record<string, unknown>;
+  const raw = d._id ?? d.id;
+  if (raw == null) return null;
+  if (typeof raw === "string") return raw;
+  if (typeof raw === "object" && raw !== null && "$oid" in raw) {
+    const oid = (raw as { $oid?: string }).$oid;
+    return typeof oid === "string" ? oid : null;
+  }
+  if (typeof raw === "object" && raw !== null && "toString" in raw) {
+    const s = String((raw as { toString: () => string }).toString());
+    if (s && !s.startsWith("[object ")) return s;
+  }
+  return null;
+}
+
 export default function UploadPageClient() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | undefined>(undefined);
@@ -39,9 +56,6 @@ export default function UploadPageClient() {
       throw new Error("Log in first so we can attach your artwork to your account.");
     }
 
-    // Same Mongo user id, two possible form field names: some API versions read
-    // `userId` (matches User ref on artwork), others read `author`. Sending both
-    // avoids a broken upload when only one name is wired on the server.
     formData.set("userId", String(uid));
     formData.set("author", String(uid));
 
@@ -51,18 +65,22 @@ export default function UploadPageClient() {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
-    const data = (await res.json().catch(() => ({}))) as {
-      message?: string;
-      _id?: string;
-    };
+    const data = (await res.json().catch(() => (null))) as unknown;
     if (!res.ok) {
+      const err = data && typeof data === "object" ? (data as { message?: string }) : {};
       throw new Error(
-        typeof data.message === "string" ? data.message : "Upload failed"
+        typeof err.message === "string" ? err.message : "Upload failed"
       );
     }
-    const id = data._id;
+    const id = createdArtworkId(data);
     if (!id) {
-      throw new Error("Upload succeeded but no artwork id was returned.");
+      const hint =
+        data && typeof data === "object"
+          ? ` Response: ${JSON.stringify(data).slice(0, 200)}`
+          : "";
+      throw new Error(
+        `Upload succeeded but no artwork id was returned.${hint}`
+      );
     }
     router.push(
       `/feedback/select?artworkId=${encodeURIComponent(String(id))}`

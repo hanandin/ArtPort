@@ -8,27 +8,19 @@ import {
   type KeyboardEvent,
 } from "react";
 
+import { resolveApiAssetUrl } from "@/lib/artworkApi";
 import { publicAsset } from "@/lib/paths";
 import type { SearchResultItem } from "@/lib/searchApi";
 
 export type SearchBarProps = {
   placeholder?: string;
   onSearch?: (query: string, filter: string) => void;
-  /** Legacy: parent-owned results when not using `loadResults`. */
   results?: SearchResultItem[];
   onSelectResult?: (item: SearchResultItem) => void;
-  /** If set, debounced fetch while typing (backend integration). */
   loadResults?: (query: string, filter: string) => Promise<SearchResultItem[]>;
   debounceMs?: number;
 };
 
-/**
- * Search bar — presentation + optional backend wiring.
- *
- * Modes:
- * - **Remote (recommended):** pass `loadResults={fetchSearchResults}` from `lib/searchApi.ts`.
- * - **Controlled:** pass `results` and handle `onSearch` yourself (legacy).
- */
 export default function SearchBar({
   placeholder = "Search",
   onSearch = () => {},
@@ -219,7 +211,11 @@ export default function SearchBar({
                   onClick={() => onSelectResult(item)}
                 >
                   <img
-                    src={item.artworkImageUrl || DEFAULT_ARTWORK_SRC}
+                    src={
+                      resolveApiAssetUrl(item.artworkImageUrl || "") ||
+                      item.artworkImageUrl ||
+                      DEFAULT_ARTWORK_SRC
+                    }
                     alt=""
                     className="search-result-artwork-thumb"
                   />
@@ -230,7 +226,11 @@ export default function SearchBar({
                     <div className="search-result-artwork-artist-row">
                       <img
                         src={
-                          item.artistProfilePictureUrl || DEFAULT_AVATAR_SRC
+                          resolveApiAssetUrl(
+                            item.artistProfilePictureUrl || ""
+                          ) ||
+                          item.artistProfilePictureUrl ||
+                          DEFAULT_AVATAR_SRC
                         }
                         alt=""
                         className="search-result-artwork-artist-avatar"

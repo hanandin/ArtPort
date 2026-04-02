@@ -1,9 +1,5 @@
 "use client";
 
-/**
- * Artwork + square thumbnail upload UI. Sends FormData via optional `onUpload`.
- * Backend wiring: see docs/BACKEND_INTEGRATION.md (pass `onUpload` + `userId` from the upload page).
- */
 import React, { useRef, useState } from "react";
 
 import ImageCropModal from "@/components/profile/ImageCropModal";
@@ -12,7 +8,6 @@ import { dataUrlToBlob } from "@/lib/cropImage";
 const ACCEPT_IMAGES =
   "image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/heic,image/heif";
 
-/** ArtIcon feed tiles are square (300×300); only the thumbnail file uses this crop. */
 const THUMB_ASPECT = 1;
 
 export type UploadCardProps = {
@@ -23,16 +18,13 @@ export type UploadCardProps = {
 export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
-  /** Object URL for the full file — shown in the main preview (never cropped). */
   const [artworkDisplayUrl, setArtworkDisplayUrl] = useState("");
   const [thumbnailBlob, setThumbnailBlob] = useState<Blob | null>(null);
-  /** JPEG data URL of the square crop — shown in the thumbnail preview below */
   const [thumbnailDisplayUrl, setThumbnailDisplayUrl] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  /** True when re-cropping thumbnail only — cancel must not remove the artwork */
   const [adjustingThumbnail, setAdjustingThumbnail] = useState(false);
 
   const fullImageUrlRef = useRef<string | null>(null);
@@ -127,10 +119,7 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
       return;
     }
     const formData = new FormData();
-    // Server: multer field name `image` (see server/src/routes/artworkRoutes.js)
-    formData.append("image", selectedFile);
-    // Optional client-only crop; not used by current API (single file upload)
-    formData.append("thumbnailImage", thumbnailBlob, "thumbnail.jpg");
+    formData.append("artworkImage", selectedFile);
     if (userId) formData.append("userId", userId);
     formData.append("title", title.trim());
     if (description.trim()) formData.append("description", description.trim());
@@ -206,11 +195,7 @@ export default function UploadCardExact({ onUpload, userId }: UploadCardProps) {
           </button>
         ) : null}
         <p className="upload-file-hint">
-          Photos only. Supported types include JPEG, PNG, GIF, WebP, BMP, SVG,
-          and HEIC/HEIF where your browser allows. The preview shows your{" "}
-          <strong>full image</strong>. After you pick a file, you&apos;ll crop a
-          separate <strong>square thumbnail</strong> for the feed (ArtIcon). The
-          original file is uploaded as the artwork.
+          Please upload your artwork image above
         </p>
       </div>
 

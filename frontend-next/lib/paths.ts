@@ -1,8 +1,3 @@
-/**
- * Must match `basePath` in `next.config.ts`:
- * - Local dev: keep `basePath` commented out in next.config → use "" here.
- * - GitHub Pages: uncomment `basePath: "/ArtPort"` → set to "/ArtPort" here.
- */
 export const APP_BASE_PATH = "";
 
 export function publicAsset(path: string): string {

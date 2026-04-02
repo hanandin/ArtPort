@@ -140,7 +140,6 @@ export default function FeedbackFormCard({
         JSON.stringify(payload)
       );
     } catch {
-      /* ignore */
     }
     console.log("Feedback submission", payload);
     setSubmitted(true);

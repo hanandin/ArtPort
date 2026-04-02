@@ -1,9 +1,5 @@
 "use client";
 
-/**
- * Profile header, avatar/banner crop, posts grid. Cropped images are passed as Blob to optional callbacks.
- * Backend wiring: see docs/BACKEND_INTEGRATION.md (pass `onAvatarImageChange` / `onBannerImageChange` from user_profile page).
- */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import ImageCropModal from "@/components/profile/ImageCropModal";
@@ -21,17 +17,20 @@ export type ProfileCardProps = {
   username: string;
   bio?: string;
   avatarSrc?: string;
+  bannerUrl?: string;
   followers?: number;
   following?: number;
   posts?: number;
   userPosts?: ProfilePostItem[];
+  isOwnProfile?: boolean;
+  enableBannerEdit?: boolean;
   onAvatarImageChange?: (blob: Blob) => Promise<void> | void;
   onBannerImageChange?: (blob: Blob) => Promise<void> | void;
 };
 
 const DEFAULT_AVATAR = publicAsset("/avatar-default.svg");
 const LS_AVATAR = "artport_profile_avatar";
-const LS_BANNER = "artport_profile_banner";
+export const PROFILE_LS_BANNER = "artport_profile_banner";
 const BANNER_ASPECT = 935 / 323;
 
 function dataUrlToBlob(dataUrl: string): Blob | null {
@@ -56,17 +55,22 @@ export default function ProfileCard({
   username,
   bio = "",
   avatarSrc: avatarSrcProp,
+  bannerUrl: bannerUrlProp,
   followers = 0,
   following = 0,
   posts = 0,
   userPosts = [],
+  isOwnProfile = true,
+  enableBannerEdit = false,
   onAvatarImageChange,
   onBannerImageChange,
 }: ProfileCardProps) {
   const [avatarSrc, setAvatarSrc] = useState(
     avatarSrcProp ?? DEFAULT_AVATAR
   );
-  const [bannerSrc, setBannerSrc] = useState<string | null>(null);
+  const [bannerSrc, setBannerSrc] = useState<string | null>(
+    bannerUrlProp ?? null
+  );
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const [cropMode, setCropMode] = useState<"avatar" | "banner" | null>(null);
   const [pendingTarget, setPendingTarget] = useState<
@@ -75,15 +79,23 @@ export default function ProfileCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (!isOwnProfile) {
+      setAvatarSrc(avatarSrcProp ?? DEFAULT_AVATAR);
+      setBannerSrc(bannerUrlProp ?? null);
+      return;
+    }
     try {
       const storedAvatar = localStorage.getItem(LS_AVATAR);
-      const storedBanner = localStorage.getItem(LS_BANNER);
+      const storedBanner = localStorage.getItem(PROFILE_LS_BANNER);
       if (storedAvatar) setAvatarSrc(storedAvatar);
       else if (avatarSrcProp) setAvatarSrc(avatarSrcProp);
-      if (storedBanner) setBannerSrc(storedBanner);
+      if (enableBannerEdit && storedBanner) setBannerSrc(storedBanner);
+      else setBannerSrc(bannerUrlProp ?? null);
     } catch {
+      if (avatarSrcProp) setAvatarSrc(avatarSrcProp);
+      setBannerSrc(bannerUrlProp ?? null);
     }
-  }, [avatarSrcProp]);
+  }, [avatarSrcProp, bannerUrlProp, isOwnProfile, enableBannerEdit]);
 
   const endCropSession = useCallback(() => {
     setRawImageSrc((prev) => {
@@ -120,10 +132,10 @@ export default function ProfileCard({
       if (blob && onAvatarImageChange) {
         onAvatarImageChange(blob);
       }
-    } else if (cropMode === "banner") {
+    } else if (cropMode === "banner" && enableBannerEdit) {
       setBannerSrc(dataUrl);
       try {
-        localStorage.setItem(LS_BANNER, dataUrl);
+        localStorage.setItem(PROFILE_LS_BANNER, dataUrl);
       } catch {
       }
       if (blob && onBannerImageChange) {
@@ -135,15 +147,17 @@ export default function ProfileCard({
 
   return (
     <article className="entire_container">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="profile_hidden_file_input"
-        onChange={onFileChange}
-        tabIndex={-1}
-        aria-hidden
-      />
+      {isOwnProfile ? (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="profile_hidden_file_input"
+          onChange={onFileChange}
+          tabIndex={-1}
+          aria-hidden
+        />
+      ) : null}
 
       <div className="banner_container">
         {bannerSrc ? (
@@ -153,14 +167,16 @@ export default function ProfileCard({
             className="banner_image"
           />
         ) : null}
-        <button
-          type="button"
-          className="edit_banner_btn"
-          onClick={() => triggerPick("banner")}
-          aria-label="Change banner image"
-        >
-          Edit banner
-        </button>
+        {isOwnProfile && enableBannerEdit ? (
+          <button
+            type="button"
+            className="edit_banner_btn"
+            onClick={() => triggerPick("banner")}
+            aria-label="Change banner image"
+          >
+            Edit banner
+          </button>
+        ) : null}
       </div>
 
       <div className="profile_header_row">
@@ -172,14 +188,16 @@ export default function ProfileCard({
             height={200}
             className="profile_pfp_image"
           />
-          <button
-            type="button"
-            className="edit_avatar_btn"
-            onClick={() => triggerPick("avatar")}
-            aria-label="Change profile photo"
-          >
-            Edit
-          </button>
+          {isOwnProfile ? (
+            <button
+              type="button"
+              className="profile_change_photo_btn"
+              onClick={() => triggerPick("avatar")}
+              aria-label="Change profile photo"
+            >
+              Change photo
+            </button>
+          ) : null}
         </div>
 
         <div className="profile_text_block">
@@ -204,7 +222,16 @@ export default function ProfileCard({
           <Folder label="Archive" />
         </div>
         <div className="profile_posts_section">
-          <ProfilePostsGrid posts={userPosts} username={username} />
+          <ProfilePostsGrid
+            posts={userPosts}
+            username={username}
+            artistAvatarUrl={avatarSrc}
+            artistProfileHref={
+              username && username !== "…" && username !== "Unknown user"
+                ? `/user_profile/${encodeURIComponent(username)}`
+                : undefined
+            }
+          />
         </div>
       </div>
 

@@ -20,8 +20,12 @@ export type SearchResultArtwork = {
   type: "artwork";
   title: string;
   artworkImageUrl: string;
+  /** Pretty /post/:slug when backend sends it */
+  slug?: string;
   artistUsername?: string;
   artistProfilePictureUrl?: string;
+  /** When API sends owner id, search can link to their profile */
+  artistUserId?: string;
 };
 
 export type SearchResultItem = SearchResultArtist | SearchResultArtwork;
@@ -35,8 +39,10 @@ type ApiUserHit = {
 type ApiArtworkHit = {
   _id: string;
   title?: string;
+  slug?: string;
   filePath?: string;
   thumbnailPath?: string;
+  userId?: string | { _id?: string };
   userDetails?: { username?: string; profilePictureUrl?: string };
 };
 
@@ -84,14 +90,25 @@ export async function fetchSearchResults(
       }));
     }
 
-    return (raw as ApiArtworkHit[]).map((a) => ({
-      id: String(a._id),
-      type: "artwork" as const,
-      title: a.title?.trim() ? a.title : "Untitled",
-      artworkImageUrl: a.thumbnailPath || a.filePath || "",
-      artistUsername: a.userDetails?.username,
-      artistProfilePictureUrl: a.userDetails?.profilePictureUrl,
-    }));
+    return (raw as ApiArtworkHit[]).map((a) => {
+      let artistUserId: string | undefined;
+      if (a.userId != null) {
+        artistUserId =
+          typeof a.userId === "object" && a.userId !== null && "_id" in a.userId
+            ? String((a.userId as { _id: string })._id)
+            : String(a.userId);
+      }
+      return {
+        id: String(a._id),
+        type: "artwork" as const,
+        title: a.title?.trim() ? a.title : "Untitled",
+        artworkImageUrl: a.thumbnailPath || a.filePath || "",
+        slug: typeof a.slug === "string" && a.slug.trim() ? a.slug : undefined,
+        artistUsername: a.userDetails?.username,
+        artistProfilePictureUrl: a.userDetails?.profilePictureUrl,
+        artistUserId,
+      };
+    });
   } catch {
     return [];
   }

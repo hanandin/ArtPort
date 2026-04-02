@@ -1,7 +1,3 @@
-/**
- * Feedback form API helpers (GET/POST forms + responses).
- * Env: NEXT_PUBLIC_API_URL. Details: docs/BACKEND_INTEGRATION.md
- */
 import type {
   FeedbackFormConfig,
   FeedbackQuestion,

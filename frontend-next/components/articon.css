@@ -25,6 +25,10 @@
   @apply flex items-center gap-2;
 }
 
+.articon-user-link {
+  @apply flex items-center gap-2 no-underline text-inherit cursor-pointer;
+}
+
 .articon-avatar {
   @apply w-[63px] h-[63px] rounded-full object-cover border border-black/10;
 }

@@ -3,16 +3,26 @@ import Link from "next/link";
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import SearchBar from "./searchbar";
-import { fetchSearchResults } from "@/lib/searchApi";
+import { fetchSearchResults, type SearchResultItem } from "@/lib/searchApi";
 
 export default function Navbar() {
     const router = useRouter()
     const [isOpen, setIsOpen] = useState(false)
     const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const [profileHref, setProfileHref] = useState("/user_profile")
 
     useEffect(() => {
         const token = localStorage.getItem('token')
         setIsLoggedIn(!!token)
+        try {
+            const raw = localStorage.getItem("user")
+            if (raw) {
+                const u = JSON.parse(raw) as { username?: string }
+                if (u.username) setProfileHref(`/user_profile/${encodeURIComponent(String(u.username))}`)
+            }
+        } catch {
+            setProfileHref("/user_profile")
+        }
     }, [])
 
     const handleSearch = (query?: any, filter?: any) => {
@@ -24,12 +34,20 @@ export default function Navbar() {
         localStorage.removeItem('user')
         setIsLoggedIn(false)
         setIsOpen(false)
+        setProfileHref("/user_profile")
         router.push('/')
     }
 
     const toggleMenu = () => {
         const token = localStorage.getItem('token')
         setIsLoggedIn(!!token)
+        try {
+            const raw = localStorage.getItem("user")
+            if (raw) {
+                const u = JSON.parse(raw) as { username?: string }
+                if (u.username) setProfileHref(`/user_profile/${encodeURIComponent(String(u.username))}`)
+            }
+        } catch { /* ignore */ }
         setIsOpen(!isOpen)
     }
 
@@ -69,7 +87,16 @@ export default function Navbar() {
                         placeholder="Search artwork..."
                         onSearch={handleSearch}
                         loadResults={fetchSearchResults}
-                        onSelectResult={() => {}}
+                        onSelectResult={(item: SearchResultItem) => {
+                            if (item.type === "artist") {
+                                router.push(`/user_profile/${encodeURIComponent(item.username)}`)
+                                return
+                            }
+                            if (item.type === "artwork") {
+                                const seg = item.slug || item.id
+                                router.push(`/post/${encodeURIComponent(seg)}`)
+                            }
+                        }}
                     />
                 </div>
             </div>
@@ -124,7 +151,7 @@ export default function Navbar() {
                         {isLoggedIn ? (
                             <>
                                 <Link
-                                    href="/user_profile"
+                                    href={profileHref}
                                     onClick={() => setIsOpen(false)}
                                     style={{
                                         color: '#f29f41',
@@ -138,7 +165,7 @@ export default function Navbar() {
                                 </Link>
 
                                 <Link
-                                    href="/user_profile"
+                                    href={profileHref}
                                     onClick={() => setIsOpen(false)}
                                     style={{
                                         color: '#f29f41',

@@ -74,7 +74,6 @@
   border-radius: 0 0 20px 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   overflow: hidden;
-  /* Above .search-results-panel (1200) so Title/Artist menu isn’t hidden while typing */
   z-index: 1300;
 }
 
