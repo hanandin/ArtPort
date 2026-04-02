@@ -118,7 +118,8 @@ export default function ProfileCard({
       } catch {
       }
       if (blob && onAvatarImageChange) {
-        onAvatarImageChange(blob);
+        Promise.resolve(onAvatarImageChange(blob)).catch(() => {
+        });
       }
     } else if (cropMode === "banner") {
       setBannerSrc(dataUrl);
@@ -127,7 +128,8 @@ export default function ProfileCard({
       } catch {
       }
       if (blob && onBannerImageChange) {
-        onBannerImageChange(blob);
+        Promise.resolve(onBannerImageChange(blob)).catch(() => {
+        });
       }
     }
     endCropSession();

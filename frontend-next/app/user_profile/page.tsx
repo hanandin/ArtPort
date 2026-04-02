@@ -1,7 +1,6 @@
 "use client";
 
-// TODO: Wire ProfileCard image callbacks to API — see docs/BACKEND_INTEGRATION.md
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import ProfileCard, {
   type ProfilePostItem,
@@ -13,6 +12,9 @@ type StoredUser = {
   _id?: string;
   username?: string;
   email?: string;
+  token?: string;
+  profilePictureUrl?: string;
+  bannerPictureUrl?: string;
 };
 
 type ApiArtwork = {
@@ -34,7 +36,7 @@ function mapUserArtworks(
     const a = raw as ApiArtwork;
     if (a.userId == null || String(a.userId) !== String(userId)) continue;
     const imageSrc =
-      a.filePath || a.imageUrl || a.thumbnailPath || "";
+      a.thumbnailPath || a.filePath || a.imageUrl || "";
     if (!imageSrc) continue;
     items.push({
       id: String(a._id),
@@ -49,6 +51,67 @@ export default function UserProfilePage() {
   const [username, setUsername] = useState("Artist");
   const [userId, setUserId] = useState<string | undefined>(undefined);
   const [userPosts, setUserPosts] = useState<ProfilePostItem[]>([]);
+
+  const uploadUserImage = useCallback(
+    async (fieldName: "profilePicture" | "bannerPicture", blob: Blob) => {
+      if (!userId) return;
+
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      const fileName =
+        fieldName === "profilePicture" ? "profile.jpg" : "banner.jpg";
+      formData.append(fieldName, blob, fileName);
+
+      const res = await fetch(`${API_URL}/api/users/${encodeURIComponent(userId)}`, {
+        method: "PATCH",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(data.message || "Failed to update profile image");
+      }
+
+      const updated = (await res.json().catch(() => ({}))) as {
+        _id?: string;
+        username?: string;
+        email?: string;
+        profilePictureUrl?: string;
+        bannerPictureUrl?: string;
+      };
+
+      const existingRaw = localStorage.getItem("user");
+      const existing = existingRaw ? (JSON.parse(existingRaw) as StoredUser) : {};
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...existing,
+          _id: updated._id ?? existing._id,
+          username: updated.username ?? existing.username,
+          email: updated.email ?? existing.email,
+          profilePictureUrl:
+            updated.profilePictureUrl ?? existing.profilePictureUrl,
+          bannerPictureUrl: updated.bannerPictureUrl ?? existing.bannerPictureUrl,
+        }),
+      );
+    },
+    [userId],
+  );
+
+  const handleAvatarImageChange = useCallback(
+    async (blob: Blob) => {
+      await uploadUserImage("profilePicture", blob);
+    },
+    [uploadUserImage],
+  );
+
+  const handleBannerImageChange = useCallback(
+    async (blob: Blob) => {
+      await uploadUserImage("bannerPicture", blob);
+    },
+    [uploadUserImage],
+  );
 
   useEffect(() => {
     try {
@@ -92,6 +155,8 @@ export default function UserProfilePage() {
         following={0}
         posts={postCount}
         userPosts={userPosts}
+        onAvatarImageChange={handleAvatarImageChange}
+        onBannerImageChange={handleBannerImageChange}
       />
     </main>
   );

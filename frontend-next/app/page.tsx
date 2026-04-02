@@ -41,7 +41,7 @@ function mapArtworkToFeedPost(raw: ApiArtwork, index: number): FeedPost {
 
   return {
     id: raw._id ? String(raw._id) : `post-${index}`,
-    image: raw.imageUrl || raw.filePath || raw.thumbnailPath || "/images/artwork_1.jpg",
+    image: raw.thumbnailPath || raw.filePath || raw.imageUrl || "/images/artwork_1.jpg",
     title: raw.title?.trim() || "Untitled",
     username: userObj?.username || "Unknown artist",
     userImage:
