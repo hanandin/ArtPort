@@ -8,6 +8,7 @@ jest.unstable_mockModule("@aws-sdk/cloudfront-signer", () => ({
 
 const { toCloudFrontDeliveryUrl, withMediaDeliveryUrls } =
   await import("../utils/mediaDelivery.js");
+const { withUserDeliveryUrls } = await import("../utils/mediaDelivery.js");
 
 describe("mediaDelivery utility", () => {
   const originalEnv = { ...process.env };
@@ -132,6 +133,28 @@ describe("mediaDelivery utility", () => {
 
     expect(output.userDetails.profilePictureUrl).toBe(
       "https://d417w64urdeit.cloudfront.net/users/profile-b.png",
+    );
+  });
+
+  it("transforms root profilePictureUrl and bannerPictureUrl for user payloads", () => {
+    process.env.CLOUDFRONT_URL = "d417w64urdeit.cloudfront.net";
+
+    const input = {
+      _id: "u1",
+      username: "artist",
+      profilePictureUrl:
+        "https://bucket.s3.us-east-2.amazonaws.com/users/pfp.png",
+      bannerPictureUrl:
+        "https://bucket.s3.us-east-2.amazonaws.com/users/banner.png",
+    };
+
+    const output = withUserDeliveryUrls(input);
+
+    expect(output.profilePictureUrl).toBe(
+      "https://d417w64urdeit.cloudfront.net/users/pfp.png",
+    );
+    expect(output.bannerPictureUrl).toBe(
+      "https://d417w64urdeit.cloudfront.net/users/banner.png",
     );
   });
 });

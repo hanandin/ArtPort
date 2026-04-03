@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { uploadImageToS3 } from "./imageUploadController.js";
+import { withUserDeliveryUrls } from "../utils/mediaDelivery.js";
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -16,7 +17,7 @@ const generateToken = (id) => {
 export const getUsers = async (req, res) => {
   try {
     const users = await User.find().select("-passwordHash");
-    res.json(users);
+    res.json(users.map((user) => withUserDeliveryUrls(user)));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -56,6 +57,7 @@ export const registerUser = async (req, res) => {
         _id: user._id,
         username: user.username,
         email: user.email,
+        profilePictureUrl: withUserDeliveryUrls(user).profilePictureUrl,
         token: generateToken(user._id),
       });
     } else {
@@ -91,7 +93,7 @@ export const loginUser = async (req, res) => {
       username: user.username,
       email: user.email,
       bio: user.bio,
-      profilePictureUrl: user.profilePictureUrl,
+      profilePictureUrl: withUserDeliveryUrls(user).profilePictureUrl,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -107,7 +109,7 @@ export const getUserProfile = async (req, res) => {
     const user = await User.findById(req.params.id).select("-passwordHash");
 
     if (user) {
-      res.json(user);
+      res.json(withUserDeliveryUrls(user));
     } else {
       res.status(404).json({ message: "User not found" });
     }
@@ -151,14 +153,7 @@ export const updateUser = async (req, res) => {
 
     const updatedUser = await user.save();
 
-    res.json({
-      _id: updatedUser._id,
-      username: updatedUser.username,
-      email: updatedUser.email,
-      bio: updatedUser.bio,
-      profilePictureUrl: updatedUser.profilePictureUrl,
-      bannerPictureUrl: updatedUser.bannerPictureUrl,
-    });
+    res.json(withUserDeliveryUrls(updatedUser));
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

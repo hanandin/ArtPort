@@ -2,6 +2,7 @@ import { getSignedUrl } from "@aws-sdk/cloudfront-signer";
 
 const DEFAULT_TTL_SECONDS = 60 * 60;
 
+// remove all this normalization stuff later for safety
 function normalizeCloudFrontBaseUrl() {
   const raw = (process.env.CLOUDFRONT_URL || "").trim();
   if (!raw) return "";
@@ -106,6 +107,21 @@ export function withMediaDeliveryUrls(artwork) {
     plain.userDetails.profilePictureUrl = toCloudFrontDeliveryUrl(
       plain.userDetails.profilePictureUrl,
     );
+  }
+
+  return plain;
+}
+
+export function withUserDeliveryUrls(user) {
+  const plain =
+    user && typeof user.toObject === "function" ? user.toObject() : { ...user };
+
+  if (plain.profilePictureUrl) {
+    plain.profilePictureUrl = toCloudFrontDeliveryUrl(plain.profilePictureUrl);
+  }
+
+  if (plain.bannerPictureUrl) {
+    plain.bannerPictureUrl = toCloudFrontDeliveryUrl(plain.bannerPictureUrl);
   }
 
   return plain;

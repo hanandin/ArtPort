@@ -1,6 +1,9 @@
 import User from "../models/User.js";
 import Artwork from "../models/Artwork.js";
-import { withMediaDeliveryUrls } from "../utils/mediaDelivery.js";
+import {
+  withMediaDeliveryUrls,
+  withUserDeliveryUrls,
+} from "../utils/mediaDelivery.js";
 
 /**
  * @desc    Search users by username
@@ -49,7 +52,7 @@ export const searchUsers = async (req, res) => {
     ]);
 
     res.json({
-      results: users,
+      results: users.map((user) => withUserDeliveryUrls(user)),
       count: users.length,
     });
   } catch (error) {

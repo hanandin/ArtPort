@@ -7,12 +7,22 @@ import ProfileCard, {
 } from "@/components/profilecard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const USER_STATE_EVENT = "artport-user-updated";
 
 type StoredUser = {
   _id?: string;
   username?: string;
   email?: string;
   token?: string;
+  profilePictureUrl?: string;
+  bannerPictureUrl?: string;
+};
+
+type ApiUserProfile = {
+  _id?: string;
+  username?: string;
+  email?: string;
+  bio?: string;
   profilePictureUrl?: string;
   bannerPictureUrl?: string;
 };
@@ -50,6 +60,7 @@ function mapUserArtworks(
 export default function UserProfilePage() {
   const [username, setUsername] = useState("Artist");
   const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   const [userPosts, setUserPosts] = useState<ProfilePostItem[]>([]);
 
   const uploadUserImage = useCallback(
@@ -95,6 +106,11 @@ export default function UserProfilePage() {
           bannerPictureUrl: updated.bannerPictureUrl ?? existing.bannerPictureUrl,
         }),
       );
+      window.dispatchEvent(new Event(USER_STATE_EVENT));
+
+      if (updated.profilePictureUrl) {
+        setProfilePictureUrl(updated.profilePictureUrl);
+      }
     },
     [userId],
   );
@@ -120,9 +136,45 @@ export default function UserProfilePage() {
       const user = JSON.parse(raw) as StoredUser;
       if (user.username) setUsername(user.username);
       if (user._id) setUserId(String(user._id));
+      if (user.profilePictureUrl) setProfilePictureUrl(user.profilePictureUrl);
     } catch {
     }
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    let cancelled = false;
+
+    fetch(`${API_URL}/api/users/${encodeURIComponent(userId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: ApiUserProfile | null) => {
+        if (cancelled || !data) return;
+        if (data.username) setUsername(data.username);
+        if (data.profilePictureUrl) setProfilePictureUrl(data.profilePictureUrl);
+        const raw = localStorage.getItem("user");
+        const existing = raw ? (JSON.parse(raw) as StoredUser) : {};
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            ...existing,
+            _id: data._id ?? existing._id,
+            username: data.username ?? existing.username,
+            email: data.email ?? existing.email,
+            profilePictureUrl:
+              data.profilePictureUrl ?? existing.profilePictureUrl,
+            bannerPictureUrl: data.bannerPictureUrl ?? existing.bannerPictureUrl,
+          }),
+        );
+        window.dispatchEvent(new Event(USER_STATE_EVENT));
+      })
+      .catch(() => {
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -150,6 +202,7 @@ export default function UserProfilePage() {
     <main className="user-profile-main">
       <ProfileCard
         username={username}
+        avatarSrc={profilePictureUrl}
         bio="Welcome to your ArtPort profile."
         followers={0}
         following={0}

@@ -1,18 +1,50 @@
-'use client'
+"use client";
+
 import Link from "next/link";
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { publicAsset } from "@/lib/paths";
 import SearchBar from "./searchbar";
 import { fetchSearchResults } from "@/lib/searchApi";
+
+type StoredUser = {
+    profilePictureUrl?: string;
+};
+
+const DEFAULT_AVATAR = publicAsset("/avatar-default.svg");
+const USER_STATE_EVENT = "artport-user-updated";
 
 export default function Navbar() {
     const router = useRouter()
     const [isOpen, setIsOpen] = useState(false)
     const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const [avatarSrc, setAvatarSrc] = useState(DEFAULT_AVATAR)
+
+    const syncUserState = () => {
+        const token = localStorage.getItem("token")
+        setIsLoggedIn(!!token)
+
+        try {
+            const rawUser = localStorage.getItem("user")
+            const user = rawUser ? (JSON.parse(rawUser) as StoredUser) : null
+            setAvatarSrc(user?.profilePictureUrl || DEFAULT_AVATAR)
+        } catch {
+            setAvatarSrc(DEFAULT_AVATAR)
+        }
+    }
 
     useEffect(() => {
-        const token = localStorage.getItem('token')
-        setIsLoggedIn(!!token)
+        syncUserState()
+
+        const handleUserUpdate = () => syncUserState()
+        window.addEventListener(USER_STATE_EVENT, handleUserUpdate)
+        window.addEventListener("storage", handleUserUpdate)
+
+        return () => {
+            window.removeEventListener(USER_STATE_EVENT, handleUserUpdate)
+            window.removeEventListener("storage", handleUserUpdate)
+        }
     }, [])
 
     const handleSearch = (query?: any, filter?: any) => {
@@ -24,12 +56,12 @@ export default function Navbar() {
         localStorage.removeItem('user')
         setIsLoggedIn(false)
         setIsOpen(false)
+        setAvatarSrc(DEFAULT_AVATAR)
         router.push('/')
     }
 
     const toggleMenu = () => {
-        const token = localStorage.getItem('token')
-        setIsLoggedIn(!!token)
+        syncUserState()
         setIsOpen(!isOpen)
     }
 
@@ -98,17 +130,33 @@ export default function Navbar() {
 
 
                 {/* Profile menu */}
-                <div
+                <button
+                    type="button"
                     onClick={toggleMenu}
+                    aria-label="Open user menu"
                     style={{
                         width: '36px',
                         height: '36px',
                         borderRadius: '50%',
-                        backgroundColor: '#ffffff',
+                        border: '2px solid #ffffff',
+                        padding: 0,
+                        overflow: 'hidden',
                         cursor: 'pointer',
-                        flexShrink: 0
+                        flexShrink: 0,
+                        backgroundColor: '#ffffff'
                     }}
-                />
+                >
+                    <img
+                        src={avatarSrc}
+                        alt=""
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block'
+                        }}
+                    />
+                </button>
 
                 {isOpen && (
                     <div style={{

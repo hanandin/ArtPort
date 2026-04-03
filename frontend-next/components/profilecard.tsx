@@ -30,7 +30,6 @@ export type ProfileCardProps = {
 };
 
 const DEFAULT_AVATAR = publicAsset("/avatar-default.svg");
-const LS_AVATAR = "artport_profile_avatar";
 const LS_BANNER = "artport_profile_banner";
 const BANNER_ASPECT = 935 / 323;
 
@@ -75,15 +74,16 @@ export default function ProfileCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    setAvatarSrc(avatarSrcProp ?? DEFAULT_AVATAR);
+  }, [avatarSrcProp]);
+
+  useEffect(() => {
     try {
-      const storedAvatar = localStorage.getItem(LS_AVATAR);
       const storedBanner = localStorage.getItem(LS_BANNER);
-      if (storedAvatar) setAvatarSrc(storedAvatar);
-      else if (avatarSrcProp) setAvatarSrc(avatarSrcProp);
       if (storedBanner) setBannerSrc(storedBanner);
     } catch {
     }
-  }, [avatarSrcProp]);
+  }, []);
 
   const endCropSession = useCallback(() => {
     setRawImageSrc((prev) => {
@@ -113,10 +113,6 @@ export default function ProfileCard({
 
     if (cropMode === "avatar") {
       setAvatarSrc(dataUrl);
-      try {
-        localStorage.setItem(LS_AVATAR, dataUrl);
-      } catch {
-      }
       if (blob && onAvatarImageChange) {
         Promise.resolve(onAvatarImageChange(blob)).catch(() => {
         });

@@ -4,6 +4,7 @@ import { useState, type ComponentProps } from "react";
 import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const USER_STATE_EVENT = "artport-user-updated";
 type FormOnSubmit = NonNullable<ComponentProps<"form">["onSubmit"]>;
 
 const LoginCard: React.FC = () => {
@@ -39,7 +40,9 @@ const LoginCard: React.FC = () => {
         _id: data._id,
         username: data.username,
         email: data.email,
+        profilePictureUrl: data.profilePictureUrl,
       }));
+      window.dispatchEvent(new Event(USER_STATE_EVENT));
 
       router.push("/user_profile");
     } catch (err: any) {
@@ -73,7 +76,9 @@ const LoginCard: React.FC = () => {
         _id: data._id,
         username: data.username,
         email: data.email,
+        profilePictureUrl: data.profilePictureUrl,
       }));
+      window.dispatchEvent(new Event(USER_STATE_EVENT));
 
       router.push("/user_profile");
     } catch (err: any) {
