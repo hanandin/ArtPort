@@ -1,0 +1,122 @@
+@reference "tailwindcss";
+
+.pageTitle {
+  @apply text-2xl font-semibold text-[#2a241c] m-0 mb-4 text-center;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.pageDesc {
+  @apply text-base text-[#5a4d3f] m-0 mb-6 max-w-prose;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.artworkContext {
+  @apply text-base text-[#5a4d3f] m-0 mb-6 max-w-prose leading-relaxed;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.artworkContext a {
+  @apply text-[#215a80] font-medium underline underline-offset-2;
+}
+
+.artworkContext a:hover {
+  @apply text-[#1a4666];
+}
+
+.artworkRow {
+  @apply flex flex-wrap items-end gap-3 mb-8;
+}
+
+.artworkLabel {
+  @apply text-sm font-medium text-[#2a241c];
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.artworkInput {
+  @apply min-w-[240px] flex-1 rounded-xl border px-3 py-2 text-sm text-[#2a241c];
+  border-color: #c9b297;
+  background: #fffaf5;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.artworkInput:focus-visible {
+  outline: 2px solid #215a80;
+  outline-offset: 2px;
+}
+
+.questions {
+  @apply flex flex-col gap-4 w-full max-w-4xl mx-auto;
+}
+
+.questionBox {
+  @apply flex gap-3 items-start rounded-[24px] border px-4 py-3 shadow-sm transition-opacity;
+  background: #f3e1cf;
+  border-color: #c9b297;
+}
+
+.questionBoxMuted {
+  @apply opacity-50;
+}
+
+.includeCol {
+  @apply flex shrink-0 pt-1;
+}
+
+.includeLabel {
+  @apply flex cursor-pointer items-start gap-2;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.includeCheckbox {
+  @apply mt-1 h-5 w-5 cursor-pointer accent-[#9a846a];
+}
+
+.includeText {
+  @apply text-sm font-medium text-[#2a241c] select-none;
+  max-width: 7rem;
+}
+
+.previewCol {
+  @apply min-w-0 flex-1;
+}
+
+.previewCol :global(fieldset) {
+  margin: 0;
+}
+
+.error {
+  @apply text-red-700 text-sm mt-4;
+}
+
+.success {
+  @apply text-[#2a241c] text-sm mt-4 rounded-xl border px-4 py-3;
+  border-color: #c9b297;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.success a {
+  @apply text-[#8b4513] font-medium underline underline-offset-2;
+}
+
+.actions {
+  @apply flex flex-wrap items-center justify-center gap-4 mt-4 pt-0 border-0;
+}
+
+.primaryBtn {
+  @apply px-6 py-3 rounded-xl text-white font-medium cursor-pointer border-0 text-base;
+  background: #9a846a;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background: #8a755e;
+}
+
+.primaryBtn:disabled {
+  @apply opacity-60 cursor-not-allowed;
+}
+
+.primaryBtn:focus-visible {
+  outline: 2px solid #215a80;
+  outline-offset: 2px;
+}

@@ -1,12 +1,5 @@
-import Image from "next/image";
+import UploadPageClient from "./UploadPageClient";
 
-import UploadCard from "../../components/uploadcard";
-
-export default function Home() {
-  return (
-  <main>
-    <h1> Upload page </h1>
-    <UploadCard />
-  </main>
-  );
+export default function UploadPage() {
+  return <UploadPageClient />;
 }
