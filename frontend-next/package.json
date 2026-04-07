@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "build:gh": "set NEXT_PUBLIC_BASE_PATH=/ArtPort&& next build",
+    "start": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$p=(Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess); if($p){Stop-Process -Id $p -Force}; npx serve@latest -l 3000 out\"",
     "lint": "eslint"
   },
   "dependencies": {

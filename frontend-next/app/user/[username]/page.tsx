@@ -6,24 +6,24 @@ export const dynamicParams = false;
 
 export async function generateStaticParams() {
   try {
-    const res = await fetch(`${API_URL}/api/users`, {
-      cache: "no-store",
-    });
+    const res = await fetch(`${API_URL}/api/users`);
 
     if (!res.ok) {
-      return [];
+      return [{ username: "demo" }];
     }
 
     const users = (await res.json().catch(() => [])) as Array<{
       username?: string;
     }>;
 
-    return users
+    const params = users
       .map((user) => user.username?.trim())
       .filter((username): username is string => Boolean(username))
       .map((username) => ({ username }));
+
+    return params.length > 0 ? params : [{ username: "demo" }];
   } catch {
-    return [];
+    return [{ username: "demo" }];
   }
 }
 
