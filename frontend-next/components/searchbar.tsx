@@ -200,7 +200,10 @@ export default function SearchBar({
                   key={item.id}
                   type="button"
                   className="search-result-item"
-                  onClick={() => onSelectResult(item)}
+                  onClick={() => {
+                    onSelectResult(item);
+                    setQuery("");
+                  }}
                 >
                   <img
                     src={item.profilePictureUrl || DEFAULT_AVATAR_SRC}
@@ -216,7 +219,10 @@ export default function SearchBar({
                   key={item.id}
                   type="button"
                   className="search-result-item"
-                  onClick={() => onSelectResult(item)}
+                  onClick={() => {
+                    onSelectResult(item);
+                    setQuery("");
+                  }}
                 >
                   <img
                     src={item.artworkImageUrl || DEFAULT_ARTWORK_SRC}

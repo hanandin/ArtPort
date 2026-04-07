@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { publicAsset } from "@/lib/paths";
 import SearchBar from "./searchbar";
-import { fetchSearchResults } from "@/lib/searchApi";
+import { fetchSearchResults, type SearchResultItem } from "@/lib/searchApi";
 
 type StoredUser = {
     _id?: string;
@@ -74,6 +74,16 @@ export default function Navbar() {
         console.log("Searching:", query, "Filter:", filter)
     }
 
+    const handleSelectResult = (item: SearchResultItem) => {
+        if (item.type === "artist" && item.username) {
+            router.push(`/user/${encodeURIComponent(item.username)}`)
+        } else if (item.type === "artwork" && item.id) {
+            // Placeholder for artwork until proper artwork route exists
+            console.log("Artwork clicked:", item.id)
+            router.push(`/post/${item.id}`)
+        }
+    }
+
     const handleLogout = () => {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
@@ -132,7 +142,7 @@ export default function Navbar() {
                         placeholder="Search artwork..."
                         onSearch={handleSearch}
                         loadResults={fetchSearchResults}
-                        onSelectResult={() => {}}
+                        onSelectResult={handleSelectResult}
                     />
                 </div>
             </div>
