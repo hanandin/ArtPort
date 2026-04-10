@@ -1,4 +1,5 @@
 import styles from "./ProfilePostsGrid.module.css";
+import Link from "next/link";
 
 export type ProfilePostItem = {
   id: string;
@@ -27,15 +28,17 @@ export default function ProfilePostsGrid({
         <ul className={styles.grid}>
           {posts.map((p) => (
             <li key={p.id} className={styles.card}>
-              <div className={styles.thumbWrap}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- API URLs / mixed sources */}
-                <img
-                  src={p.imageSrc}
-                  alt=""
-                  className={styles.thumb}
-                />
-              </div>
-              <p className={styles.title}>{p.title}</p>
+              <Link href={`/post/${encodeURIComponent(p.id)}`}>
+                <div className={styles.thumbWrap}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- API URLs / mixed sources */}
+                  <img
+                    src={p.imageSrc}
+                    alt=""
+                    className={styles.thumb}
+                  />
+                </div>
+                <p className={styles.title}>{p.title}</p>
+              </Link>
             </li>
           ))}
         </ul>

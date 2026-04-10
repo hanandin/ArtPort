@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 type Post = {
   id: string;
   image: string;
@@ -10,7 +12,7 @@ type Post = {
 
 export default function ArtIcon({ post }: { post: Post }) {
   return (
-    <div className="articon-container">
+    <Link href={`/post/${encodeURIComponent(post.id)}`} className="articon-container">
       <img
         src={post.image}
         alt={post.title}
@@ -29,6 +31,6 @@ export default function ArtIcon({ post }: { post: Post }) {
 
         <div className="articon-title">{post.title}</div>
       </div>
-    </div>
+    </Link>
   );
 }

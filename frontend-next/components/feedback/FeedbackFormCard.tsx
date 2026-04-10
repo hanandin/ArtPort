@@ -15,6 +15,7 @@ import {
   buildResponseAnswers,
   submitFeedbackResponse,
 } from "@/lib/feedbackApi";
+import { getClientAuthToken } from "@/lib/authSession";
 
 import styles from "./FeedbackFormCard.module.css";
 
@@ -105,10 +106,7 @@ export default function FeedbackFormCard({
     }
 
     if (remoteFormId) {
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("token")
-          : null;
+      const token = getClientAuthToken();
       if (!token) {
         setSubmitError("Please log in to submit feedback.");
         return;

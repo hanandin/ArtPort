@@ -9,6 +9,7 @@ import {
   fetchFeedbackForm,
   mapApiFormToConfig,
 } from "@/lib/feedbackApi";
+import { getClientAuthToken } from "@/lib/authSession";
 import type { FeedbackFormConfig } from "@/types/feedback";
 
 import styles from "@/app/feedback/feedback.module.css";
@@ -35,10 +36,7 @@ function FeedbackPageInner() {
     setLoadError("");
     setApiConfig(null);
 
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("token")
-        : null;
+    const token = getClientAuthToken();
 
     fetchFeedbackForm(formId, token)
       .then((form) => {

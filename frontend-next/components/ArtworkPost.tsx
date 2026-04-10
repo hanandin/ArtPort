@@ -1,8 +1,11 @@
 "use client";
+import Link from "next/link";
 import React, { useState } from "react";
+
 import styles from "./ArtworkPost.module.css";
 import FeedbackFormCard from "@/components/feedback/FeedbackFormCard";
-import feedbackConfig from "@/data/feedback-questions.json";
+import defaultFeedbackConfig from "@/data/feedback-questions.json";
+import type { ApiFeedbackResponseQuestion } from "@/lib/feedbackApi";
 import type { FeedbackFormConfig } from "@/types/feedback";
 
 interface ArtworkPostProps {
@@ -11,6 +14,38 @@ interface ArtworkPostProps {
   description: string;
   artistName: string;
   artistAvatarUrl?: string;
+  artistProfileHref?: string;
+  feedbackConfig?: FeedbackFormConfig;
+  feedbackFormId?: string;
+  isOwnerArtwork?: boolean;
+  isAuthenticated?: boolean;
+  receivedResponses?: {
+    _id: string;
+    userId: string;
+    createdAt?: string;
+    form: { questions: ApiFeedbackResponseQuestion[] };
+  }[];
+}
+
+function responseValue(question: ApiFeedbackResponseQuestion): string {
+  if (typeof question.textValue === "string" && question.textValue.trim()) {
+    return question.textValue.trim();
+  }
+
+  if (typeof question.ratingSelection === "number") {
+    return String(question.ratingSelection);
+  }
+
+  const selected = question.options
+    .filter((option) => option.selected)
+    .map((option) => option.option.trim())
+    .filter(Boolean);
+
+  if (selected.length > 0) {
+    return selected.join(", ");
+  }
+
+  return "No answer";
 }
 
 export default function ArtworkPost({
@@ -19,8 +54,18 @@ export default function ArtworkPost({
   description,
   artistName,
   artistAvatarUrl,
+  artistProfileHref,
+  feedbackConfig,
+  feedbackFormId,
+  isOwnerArtwork = false,
+  isAuthenticated = true,
+  receivedResponses = [],
 }: ArtworkPostProps) {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const formConfig = feedbackConfig ?? (defaultFeedbackConfig as FeedbackFormConfig);
+  const canInteract = isAuthenticated;
+  const buttonOpenLabel = isOwnerArtwork ? "View Responses" : "Leave Feedback";
+  const buttonCloseLabel = isOwnerArtwork ? "Close Responses" : "Close Feedback";
 
   return (
     <div className={styles.page}>
@@ -35,40 +80,102 @@ export default function ArtworkPost({
           </div>
 
           {/* Caption Frame */}
-          <div className={styles.captionFrame}>
-            <h1 className={styles.artworkTitle}>{title}</h1>
-            <p className={styles.description}>{description}</p>
-            <button
-              className={styles.feedbackButton}
-              onClick={() => setFeedbackOpen(!feedbackOpen)}
-            >
-              {feedbackOpen ? "Close Feedback" : "Leave Feedback"}
-            </button>
+          <div
+            className={`${styles.captionFrame} ${!canInteract ? styles.captionFrameLocked : ""}`}
+          >
+            <div className={!canInteract ? styles.captionFrameLockedContent : ""}>
+              <h1 className={styles.artworkTitle}>{title}</h1>
+              <p className={styles.description}>{description}</p>
+              {canInteract ? (
+                <button
+                  className={styles.feedbackButton}
+                  onClick={() => setFeedbackOpen(!feedbackOpen)}
+                >
+                  {feedbackOpen ? buttonCloseLabel : buttonOpenLabel}
+                </button>
+              ) : null}
+            </div>
+            {!canInteract ? (
+              <Link href="/login" className={styles.captionLoginMessage}>
+                Log in to interact with this post.
+              </Link>
+            ) : null}
           </div>
         </div>
 
         {/* Sidebar: artist info (only when feedback is closed) */}
         {!feedbackOpen && (
           <div className={styles.sidebar}>
-            <div className={styles.artistInfo}>
-              {artistAvatarUrl ? (
-                <img
-                  src={artistAvatarUrl}
-                  alt={artistName}
-                  className={styles.avatar}
-                />
-              ) : (
-                <div className={styles.avatarPlaceholder} />
-              )}
-              <span className={styles.username}>{artistName}</span>
-            </div>
+            {artistProfileHref ? (
+              <Link href={artistProfileHref} prefetch={false} className={styles.artistInfo}>
+                {artistAvatarUrl ? (
+                  <img
+                    src={artistAvatarUrl}
+                    alt={artistName}
+                    className={styles.avatar}
+                  />
+                ) : (
+                  <div className={styles.avatarPlaceholder} />
+                )}
+                <span className={styles.username}>{artistName}</span>
+              </Link>
+            ) : (
+              <div className={styles.artistInfo}>
+                {artistAvatarUrl ? (
+                  <img
+                    src={artistAvatarUrl}
+                    alt={artistName}
+                    className={styles.avatar}
+                  />
+                ) : (
+                  <div className={styles.avatarPlaceholder} />
+                )}
+                <span className={styles.username}>{artistName}</span>
+              </div>
+            )}
           </div>
         )}
 
         {/* Feedback Form Panel (replaces sidebar when open) */}
         {feedbackOpen && (
           <div className={styles.feedbackPanel}>
-            <FeedbackFormCard config={feedbackConfig as FeedbackFormConfig} />
+            {isOwnerArtwork ? (
+              <div className={styles.responsesList}>
+                <h2 className={styles.responsesHeading}>Responses</h2>
+                {receivedResponses.length === 0 ? (
+                  <p className={styles.emptyResponses}>No responses yet from other users.</p>
+                ) : (
+                  receivedResponses.map((response) => (
+                    <article key={response._id} className={styles.responseCard}>
+                      <div className={styles.responseMeta}>
+                        <span className={styles.responseUser}>User: {response.userId}</span>
+                        {response.createdAt ? (
+                          <span className={styles.responseDate}>
+                            {new Date(response.createdAt).toLocaleString()}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className={styles.responseAnswers}>
+                        {response.form.questions
+                          .slice()
+                          .sort((a, b) => a.order - b.order)
+                          .map((question) => (
+                            <div key={question._id} className={styles.responseAnswerRow}>
+                              <p className={styles.responseQuestion}>{question.question}</p>
+                              <p className={styles.responseValue}>{responseValue(question)}</p>
+                            </div>
+                          ))}
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+            ) : (
+              <FeedbackFormCard
+                config={formConfig as FeedbackFormConfig}
+                remoteFormId={feedbackFormId}
+              />
+            )}
           </div>
         )}
 

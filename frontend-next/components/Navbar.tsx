@@ -7,10 +7,8 @@ import { useRouter } from "next/navigation";
 import { publicAsset } from "@/lib/paths";
 import SearchBar from "./searchbar";
 import { fetchSearchResults, type SearchResultItem } from "@/lib/searchApi";
-
-type StoredUser = {
-    _id?: string;
-};
+import { clearAuthSession, getClientAuthToken } from "@/lib/authSession";
+import { fetchCurrentUser } from "@/lib/currentUserApi";
 
 const DEFAULT_AVATAR = publicAsset("/avatar-default.svg");
 const USER_STATE_EVENT = "artport-user-updated";
@@ -23,7 +21,7 @@ export default function Navbar() {
     const [avatarSrc, setAvatarSrc] = useState(DEFAULT_AVATAR)
 
     const syncUserState = useCallback(async () => {
-        const token = localStorage.getItem("token")
+        const token = getClientAuthToken()
         setIsLoggedIn(!!token)
 
         if (!token) {
@@ -32,24 +30,13 @@ export default function Navbar() {
         }
 
         try {
-            const rawUser = localStorage.getItem("user")
-            const user = rawUser ? (JSON.parse(rawUser) as StoredUser) : null
-            const userId = user?._id ? String(user._id) : ""
-            if (!userId) {
+            const user = await fetchCurrentUser(token)
+            if (!user?._id) {
                 setAvatarSrc(DEFAULT_AVATAR)
                 return
             }
 
-            const res = await fetch(`${API_URL}/api/users/${encodeURIComponent(userId)}`)
-            if (!res.ok) {
-                setAvatarSrc(DEFAULT_AVATAR)
-                return
-            }
-
-            const data = (await res.json().catch(() => ({}))) as {
-                profilePictureUrl?: string
-            }
-            setAvatarSrc(data.profilePictureUrl || DEFAULT_AVATAR)
+            setAvatarSrc(user.profilePictureUrl || DEFAULT_AVATAR)
         } catch {
             setAvatarSrc(DEFAULT_AVATAR)
         }
@@ -78,15 +65,13 @@ export default function Navbar() {
         if (item.type === "artist" && item.username) {
             router.push(`/user/${encodeURIComponent(item.username)}`)
         } else if (item.type === "artwork" && item.id) {
-            // Placeholder for artwork until proper artwork route exists
             console.log("Artwork clicked:", item.id)
-            router.push(`/post/${item.id}`)
+            router.push(`/post/${encodeURIComponent(item.id)}`)
         }
     }
 
     const handleLogout = () => {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        clearAuthSession()
         setIsLoggedIn(false)
         setIsOpen(false)
         setAvatarSrc(DEFAULT_AVATAR)
@@ -166,7 +151,7 @@ export default function Navbar() {
                     fontWeight: '300',
 
                 }}>
-                    <Link href="/upload">+</Link>
+                    <Link href="/upload" prefetch={false}>+</Link>
                 </div>
 
 

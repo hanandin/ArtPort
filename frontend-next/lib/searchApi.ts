@@ -5,6 +5,9 @@
  * This helper never throws: if the backend is down, CORS blocks, or the response is not OK,
  * it returns an empty array so the search bar stays usable in frontend-only mode.
  */
+import { resolveApiAssetUrl } from "@/lib/artworkApi";
+import { getClientAuthToken } from "@/lib/authSession";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export type SearchResultArtist = {
@@ -37,6 +40,14 @@ type ApiArtworkHit = {
   title?: string;
   filePath?: string;
   thumbnailPath?: string;
+  imageUrl?: string;
+  userId?:
+    | {
+        username?: string;
+        profilePicture?: string;
+        profilePictureUrl?: string;
+      }
+    | string;
   userDetails?: { username?: string; profilePictureUrl?: string };
 };
 
@@ -52,8 +63,7 @@ export async function fetchSearchResults(
   if (!q) return [];
 
   try {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getClientAuthToken();
     const headers: HeadersInit = {};
     if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -62,7 +72,7 @@ export async function fetchSearchResults(
       ? `${API_URL}/api/search/users?query=${encodeURIComponent(q)}`
       : `${API_URL}/api/search/artworks?query=${encodeURIComponent(q)}`;
 
-    const res = await fetch(url, { headers });
+    const res = await fetch(url, { headers, credentials: "include" });
 
     const data = (await res.json().catch(() => ({}))) as {
       message?: string;
@@ -88,9 +98,20 @@ export async function fetchSearchResults(
       id: String(a._id),
       type: "artwork" as const,
       title: a.title?.trim() ? a.title : "Untitled",
-      artworkImageUrl: a.thumbnailPath || a.filePath || "",
-      artistUsername: a.userDetails?.username,
-      artistProfilePictureUrl: a.userDetails?.profilePictureUrl,
+      artworkImageUrl:
+        resolveApiAssetUrl(a.thumbnailPath) ||
+        resolveApiAssetUrl(a.filePath) ||
+        resolveApiAssetUrl(a.imageUrl) ||
+        "",
+      artistUsername:
+        a.userDetails?.username ||
+        (typeof a.userId === "object" ? a.userId.username : undefined),
+      artistProfilePictureUrl:
+        resolveApiAssetUrl(a.userDetails?.profilePictureUrl) ||
+        (typeof a.userId === "object"
+          ? resolveApiAssetUrl(a.userId.profilePictureUrl) ||
+            resolveApiAssetUrl(a.userId.profilePicture)
+          : undefined),
     }));
   } catch {
     return [];

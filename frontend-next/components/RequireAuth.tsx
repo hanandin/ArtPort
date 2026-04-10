@@ -2,6 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+  clearAuthSession,
+  getClientAuthToken,
+  setAuthTokenCookie,
+} from "@/lib/authSession";
 
 type StoredUser = {
   _id?: string;
@@ -20,6 +25,26 @@ function isJwtExpired(token: string): boolean {
   }
 }
 
+export function getAuthenticatedUserIdFromStorage(): string | null {
+  try {
+    const token = getClientAuthToken();
+    const rawUser = localStorage.getItem("user");
+
+    if (!token || !rawUser || isJwtExpired(token)) {
+      return null;
+    }
+
+    const user = JSON.parse(rawUser) as StoredUser;
+    if (!user._id) {
+      return null;
+    }
+
+    return String(user._id);
+  } catch {
+    return null;
+  }
+}
+
 export default function RequireAuth({
   children,
 }: {
@@ -32,7 +57,7 @@ export default function RequireAuth({
   useEffect(() => {
     let shouldRedirect = false;
 
-    const token = localStorage.getItem("token");
+    const token = getClientAuthToken();
     const rawUser = localStorage.getItem("user");
 
     if (!token || !rawUser) {
@@ -41,12 +66,13 @@ export default function RequireAuth({
       const user = JSON.parse(rawUser) as StoredUser;
       if (!user._id || isJwtExpired(token)) {
         shouldRedirect = true;
+      } else {
+        setAuthTokenCookie(token);
       }
     }
 
     if (shouldRedirect) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      clearAuthSession();
       setIsAuthed(false);
       setIsLoading(false);
       router.replace("/login");

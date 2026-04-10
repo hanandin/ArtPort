@@ -60,14 +60,13 @@ const cleanupFormTree = async (formId) => {
 // @route   POST /api/feedbackForm
 // @access  Private
 export const createFeedbackForm = async (req, res) => {
-  const { artworkID, artworkId, userId, createdBy, questions } = req.body;
+  const { artworkId, userId, createdBy, questions } = req.body;
 
-  const resolvedArtworkId = artworkID || artworkId;
   const requestedCreatedBy = userId || createdBy;
   const authUserId = String(req.user._id);
 
-  if (!isObjectId(resolvedArtworkId)) {
-    return res.status(400).json({ message: "Valid artworkID is required" });
+  if (!isObjectId(artworkId)) {
+    return res.status(400).json({ message: "Valid artworkId is required" });
   }
 
   if (requestedCreatedBy && String(requestedCreatedBy) !== authUserId) {
@@ -86,7 +85,7 @@ export const createFeedbackForm = async (req, res) => {
 
   try {
     form = await FeedbackForm.create({
-      artworkId: resolvedArtworkId,
+      artworkId: artworkId,
       createdBy: authUserId,
     });
 
@@ -179,7 +178,7 @@ export const createFeedbackForm = async (req, res) => {
 export const getFeedbackForms = async (req, res) => {
   try {
     const authUserId = String(req.user._id);
-    const { artworkId, artworkID, userId, createdBy } = req.query;
+    const { artworkId, userId, createdBy } = req.query;
     const requestedOwnerId = userId || createdBy;
 
     if (requestedOwnerId && String(requestedOwnerId) !== authUserId) {
@@ -188,7 +187,7 @@ export const getFeedbackForms = async (req, res) => {
       });
     }
 
-    const resolvedArtworkId = artworkID || artworkId;
+    const resolvedArtworkId = artworkId;
     const query = { createdBy: authUserId };
 
     if (resolvedArtworkId !== undefined) {
@@ -318,18 +317,15 @@ export const getFeedbackFormById = async (req, res) => {
 // @route   POST /api/response
 // @access  Private
 export const createResponse = async (req, res) => {
-  const { feedbackFormID, feedbackId, userID, userId, Answers, answers } =
-    req.body;
+  const { feedbackFormId, userId, answers } = req.body;
 
-  const resolvedFeedbackId = feedbackFormID || feedbackId;
-  const requestedUserId = userID || userId;
-  const resolvedAnswers = Answers || answers;
+  const requestedUserId = userId;
   const authUserId = String(req.user._id);
 
-  if (!isObjectId(resolvedFeedbackId)) {
+  if (!isObjectId(feedbackFormId)) {
     return res
       .status(400)
-      .json({ message: "Valid feedbackFormID is required" });
+      .json({ message: "Valid feedbackFormId is required" });
   }
 
   if (requestedUserId && String(requestedUserId) !== authUserId) {
@@ -338,14 +334,14 @@ export const createResponse = async (req, res) => {
     });
   }
 
-  if (!Array.isArray(resolvedAnswers) || resolvedAnswers.length === 0) {
+  if (!Array.isArray(answers) || answers.length === 0) {
     return res
       .status(400)
-      .json({ message: "Answers must be a non-empty array" });
+      .json({ message: "answers must be a non-empty array" });
   }
 
   try {
-    const form = await FeedbackForm.findById(resolvedFeedbackId);
+    const form = await FeedbackForm.findById(feedbackFormId);
 
     if (!form) {
       return res.status(404).json({ message: "Feedback form not found" });
@@ -385,13 +381,13 @@ export const createResponse = async (req, res) => {
 
     const answerDocs = [];
 
-    for (const [index, answerItem] of resolvedAnswers.entries()) {
-      const questionId = answerItem.questionID || answerItem.questionId;
+    for (const [index, answerItem] of answers.entries()) {
+      const questionId = answerItem.questionId;
 
       if (!isObjectId(questionId)) {
         await Response.findByIdAndDelete(response._id);
         return res.status(400).json({
-          message: `Answer at index ${index} has invalid questionID`,
+          message: `Answer at index ${index} has invalid questionId`,
         });
       }
 
@@ -400,7 +396,7 @@ export const createResponse = async (req, res) => {
       if (!question) {
         await Response.findByIdAndDelete(response._id);
         return res.status(400).json({
-          message: `Question ${questionId} does not belong to feedback form ${resolvedFeedbackId}`,
+          message: `Question ${questionId} does not belong to feedback form ${feedbackFormId}`,
         });
       }
 
@@ -498,24 +494,57 @@ export const createResponse = async (req, res) => {
 export const getResponses = async (req, res) => {
   try {
     const authUserId = String(req.user._id);
-    const { feedbackFormId, feedbackFormID, feedbackId, userId, userID } =
-      req.query;
-    const requestedUserId = userID || userId;
+    const { feedbackFormId, userId, ownerView } = req.query;
+    const requestedUserId = userId;
+    const ownerViewRequested =
+      ownerView === true || ownerView === "true" || ownerView === "1";
 
-    if (requestedUserId && String(requestedUserId) !== authUserId) {
-      return res.status(403).json({
-        message: "You can only list your own responses",
-      });
-    }
+    const resolvedFeedbackId = feedbackFormId;
+    const query = {};
 
-    const resolvedFeedbackId = feedbackFormID || feedbackFormId || feedbackId;
-    const query = { userId: authUserId };
-
-    if (resolvedFeedbackId !== undefined) {
-      if (!isObjectId(resolvedFeedbackId)) {
-        return res.status(400).json({ message: "Invalid feedbackFormId" });
+    if (ownerViewRequested) {
+      if (requestedUserId) {
+        return res.status(400).json({
+          message: "userId filter cannot be used with ownerView",
+        });
       }
+
+      if (!resolvedFeedbackId || !isObjectId(resolvedFeedbackId)) {
+        return res
+          .status(400)
+          .json({ message: "Valid feedbackFormId is required" });
+      }
+
+      const feedbackForm =
+        await FeedbackForm.findById(resolvedFeedbackId).select("createdBy");
+
+      if (!feedbackForm) {
+        return res.status(404).json({ message: "Feedback form not found" });
+      }
+
+      if (String(feedbackForm.createdBy) !== authUserId) {
+        return res.status(403).json({
+          message: "You can only list received responses for your own artwork",
+        });
+      }
+
       query.feedbackId = resolvedFeedbackId;
+      query.userId = { $ne: authUserId };
+    } else {
+      if (requestedUserId && String(requestedUserId) !== authUserId) {
+        return res.status(403).json({
+          message: "You can only list your own responses",
+        });
+      }
+
+      query.userId = authUserId;
+
+      if (resolvedFeedbackId !== undefined) {
+        if (!isObjectId(resolvedFeedbackId)) {
+          return res.status(400).json({ message: "Invalid feedbackFormId" });
+        }
+        query.feedbackId = resolvedFeedbackId;
+      }
     }
 
     const responses = await Response.find(query).sort({ createdAt: -1 });

@@ -99,6 +99,90 @@
   overflow-y: auto;
 }
 
+.responsesList {
+  width: 100%;
+  background: #f3e1cf;
+  border: 3px solid #c9b297;
+  padding: 18px;
+  box-sizing: border-box;
+}
+
+.responsesHeading {
+  margin: 0 0 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.emptyResponses {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.responseCard {
+  background: #fff7ed;
+  border: 1px solid #d4b894;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.responseCard + .responseCard {
+  margin-top: 12px;
+}
+
+.responseMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.responseUser,
+.responseDate,
+.responseQuestion,
+.responseValue {
+  font-family: 'Inter', sans-serif;
+}
+
+.responseUser {
+  margin: 0;
+  font-size: 13px;
+  color: #111827;
+}
+
+.responseDate {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.responseAnswers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.responseAnswerRow {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.responseQuestion {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.responseValue {
+  margin: 0;
+  font-size: 14px;
+  color: #111827;
+}
+
 /* Caption frame */
 .captionFrame {
   width: 100%;
@@ -108,6 +192,34 @@
   border: 3px solid #c9b297;
   box-sizing: border-box;
   padding-bottom: 48px;
+}
+
+.captionFrameLocked {
+  position: relative;
+  overflow: hidden;
+}
+
+.captionFrameLockedContent {
+  filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.captionLoginMessage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #1f2937;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .artworkTitle {

@@ -12,6 +12,7 @@ import {
   createFeedbackForm,
   mapFeedbackQuestionsToCreatePayload,
 } from "@/lib/feedbackApi";
+import { getClientAuthToken } from "@/lib/authSession";
 
 import styles from "./FeedbackQuestionSelect.module.css";
 
@@ -57,8 +58,7 @@ export default function FeedbackQuestionSelect({
     setError("");
     setCreatedFormId(null);
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getClientAuthToken();
     if (!token) {
       setError("Please log in first.");
       return;

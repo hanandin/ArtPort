@@ -2,6 +2,7 @@
 
 import { useState, type ComponentProps } from "react";
 import { useRouter } from "next/navigation";
+import { persistAuthSession } from "@/lib/authSession";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const USER_STATE_EVENT = "artport-user-updated";
@@ -26,6 +27,7 @@ const LoginCard: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
@@ -35,12 +37,11 @@ const LoginCard: React.FC = () => {
         throw new Error(data.message || "Login failed");
       }
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify({
+      persistAuthSession(data.token, {
         _id: data._id,
         username: data.username,
         email: data.email,
-      }));
+      });
       window.dispatchEvent(new Event(USER_STATE_EVENT));
 
       router.push("/me");
@@ -61,6 +62,7 @@ const LoginCard: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ username, email, password }),
       });
 
@@ -70,12 +72,11 @@ const LoginCard: React.FC = () => {
         throw new Error(data.message || "Registration failed");
       }
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify({
+      persistAuthSession(data.token, {
         _id: data._id,
         username: data.username,
         email: data.email,
-      }));
+      });
       window.dispatchEvent(new Event(USER_STATE_EVENT));
 
       router.push("/me");
