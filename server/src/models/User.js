@@ -37,6 +37,11 @@ const userSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    rootFolderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Folder",
+        default: null,
     }
 }, {
     timestamps: true // This will add createdAt and updatedAt automatically as well, but keeping createdAt explicitly doesn't hurt.
