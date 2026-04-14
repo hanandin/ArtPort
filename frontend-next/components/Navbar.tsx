@@ -134,7 +134,7 @@ export default function Navbar() {
 
 
             {/* Upload Profile and profile button wrapper*/}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '16px' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '16px', position: 'relative' }}>
 
                 {/* Upload button */}
                 <div style={{
@@ -193,7 +193,8 @@ export default function Navbar() {
                         borderRadius: '8px',
                         padding: '8px',
                         minWidth: '120px',
-                        border: '1px solid #cccccc'
+                        border: '1px solid #cccccc',
+                        zIndex: 1000
                     }}>
                         {isLoggedIn ? (
                             <>
