@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import Folder from "../models/Folder.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { uploadImageToS3 } from "./imageUploadController.js";
@@ -83,6 +84,35 @@ export const registerUser = async (req, res) => {
     });
 
     if (user) {
+      // Initialize folder structure for new user
+      // Create root folder
+      const rootFolder = await Folder.create({
+        userId: user._id,
+        folderName: "Root",
+        parentFolderId: null,
+        isPublic: true,
+      });
+
+      // Create "Portfolio" folder
+      await Folder.create({
+        userId: user._id,
+        folderName: "Portfolio",
+        parentFolderId: rootFolder._id,
+        isPublic: true,
+      });
+
+      // Create "Archive" folder
+      await Folder.create({
+        userId: user._id,
+        folderName: "Archive",
+        parentFolderId: rootFolder._id,
+        isPublic: false,
+      });
+
+      // Update user with root folder reference
+      user.rootFolderId = rootFolder._id;
+      await user.save();
+
       const token = generateToken(user._id);
       setAuthCookie(res, token);
       res.status(201).json({
@@ -90,6 +120,7 @@ export const registerUser = async (req, res) => {
         username: user.username,
         email: user.email,
         profilePictureUrl: withUserDeliveryUrls(user).profilePictureUrl,
+        rootFolderId: user.rootFolderId,
         token,
       });
     } else {
