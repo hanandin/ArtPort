@@ -18,6 +18,11 @@ const folderSchema = new mongoose.Schema(
       ref: "Folder",
       default: null,
     },
+    artworkIds: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Artwork",
+      default: [],
+    },
     isPublic: {
       type: Boolean,
       default: true,

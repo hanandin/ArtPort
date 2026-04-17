@@ -102,9 +102,9 @@ export const getFolderContents = async (req, res) => {
       parentFolderId: req.params.id,
     }).select("_id folderName isPublic createdAt updatedAt");
 
-    // Get artworks in this folder
+    // Get artworks stored in this folder
     const artworks = await Artwork.find({
-      folderId: req.params.id,
+      _id: { $in: folder.artworkIds },
     }).select("_id title description filePath thumbnailPath uploadDate isPublic");
 
     res.json({
@@ -155,7 +155,7 @@ export const getUserFolderTree = async (req, res) => {
       }).select("_id folderName isPublic createdAt updatedAt");
 
       const artworks = await Artwork.find({
-        folderId: folderId,
+        _id: { $in: folder.artworkIds },
       }).select("_id title isPublic");
 
       const children = await Promise.all(
@@ -293,17 +293,21 @@ export const deleteFolder = async (req, res) => {
         deletedArtworks: artworkCount,
       });
     } else {
-      // Move artworks and subfolders to parent folder
-      if (subfolderCount > 0 || artworkCount > 0) {
+      // Move subfolders to parent folder
+      if (subfolderCount > 0) {
         await Folder.updateMany(
           { parentFolderId: req.params.id },
           { parentFolderId: folder.parentFolderId },
         );
+      }
 
-        await Artwork.updateMany(
-          { folderId: req.params.id },
-          { folderId: folder.parentFolderId },
-        );
+      // Move artworks to parent folder
+      if (artworkCount > 0 && folder.parentFolderId) {
+        const parentFolder = await Folder.findById(folder.parentFolderId);
+        if (parentFolder) {
+          parentFolder.artworkIds.push(...folder.artworkIds);
+          await parentFolder.save();
+        }
       }
 
       // Delete the folder
