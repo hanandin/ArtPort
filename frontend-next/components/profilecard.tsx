@@ -66,17 +66,12 @@ export default function ProfileCard({
   onAvatarImageChange,
   onBannerImageChange,
 }: ProfileCardProps) {
-  const [avatarSrc, setAvatarSrc] = useState(
-    avatarSrcProp ?? DEFAULT_AVATAR
-  );
-  const [bannerSrc, setBannerSrc] = useState<string | null>(
-    bannerSrcProp ?? null
-  );
+  const [avatarSrc, setAvatarSrc] = useState(avatarSrcProp ?? DEFAULT_AVATAR);
+  const [bannerSrc, setBannerSrc] = useState<string | null>(bannerSrcProp ?? null);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const [cropMode, setCropMode] = useState<"avatar" | "banner" | null>(null);
-  const [pendingTarget, setPendingTarget] = useState<
-    "avatar" | "banner" | null
-  >(null);
+  const [pendingTarget, setPendingTarget] = useState<"avatar" | "banner" | null>(null);
+  const [activeTab, setActiveTab] = useState<"posts" | "collections">("posts");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const endCropSession = useCallback(() => {
@@ -108,14 +103,12 @@ export default function ProfileCard({
     if (cropMode === "avatar") {
       setAvatarSrc(dataUrl);
       if (blob && onAvatarImageChange) {
-        Promise.resolve(onAvatarImageChange(blob)).catch(() => {
-        });
+        Promise.resolve(onAvatarImageChange(blob)).catch(() => {});
       }
     } else if (cropMode === "banner") {
       setBannerSrc(dataUrl);
       if (blob && onBannerImageChange) {
-        Promise.resolve(onBannerImageChange(blob)).catch(() => {
-        });
+        Promise.resolve(onBannerImageChange(blob)).catch(() => {});
       }
     }
     endCropSession();
@@ -135,11 +128,7 @@ export default function ProfileCard({
 
       <div className="banner_container">
         {bannerSrc ? (
-          <img
-            src={bannerSrc}
-            alt=""
-            className="banner_image"
-          />
+          <img src={bannerSrc} alt="" className="banner_image" />
         ) : null}
         {isEditable && (
           <button
@@ -191,12 +180,32 @@ export default function ProfileCard({
       </div>
 
       <div className="separation">
-        <div className="folder_row">
-          <Folder label="Portfolio" />
-          <Folder label="Archive" />
+        {/* Tab Bar */}
+        <div className="tab_bar">
+          <button
+            className={`tab_btn ${activeTab === "posts" ? "tab_btn_active" : ""}`}
+            onClick={() => setActiveTab("posts")}
+          >
+            Posts
+          </button>
+          <button
+            className={`tab_btn ${activeTab === "collections" ? "tab_btn_active" : ""}`}
+            onClick={() => setActiveTab("collections")}
+          >
+            Collections
+          </button>
         </div>
-        <div className="profile_posts_section">
-          <ProfilePostsGrid posts={userPosts} username={username} />
+
+        {/* Tab Content */}
+        <div className="tab_content">
+          {activeTab === "posts" ? (
+            <ProfilePostsGrid posts={userPosts} username={username} />
+          ) : (
+            <div className="folder_row">
+              <Folder label="Portfolio" />
+              <Folder label="Archive" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -205,11 +214,7 @@ export default function ProfileCard({
           imageSrc={rawImageSrc}
           aspect={cropMode === "banner" ? BANNER_ASPECT : 1}
           cropShape={cropMode === "avatar" ? "round" : "rect"}
-          title={
-            cropMode === "banner"
-              ? "Adjust banner"
-              : "Adjust profile photo"
-          }
+          title={cropMode === "banner" ? "Adjust banner" : "Adjust profile photo"}
           onApply={applyCrop}
           onCancel={endCropSession}
         />

@@ -21,7 +21,6 @@ export default function ProfilePostsGrid({
       className={styles.section}
       aria-label={`Posts by ${username}`}
     >
-      <h2 className={styles.heading}>Your posts</h2>
       {posts.length === 0 ? (
         <p className={styles.empty}>No uploads yet.</p>
       ) : (

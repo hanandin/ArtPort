@@ -187,23 +187,58 @@
   max-width: calc(100% - 4rem);
   margin: 1.75rem auto 2rem;
   border-radius: 10px;
-  background: linear-gradient(180deg, #f4f4f4 0%, rgba(142, 142, 142, 0) 100%);
-  padding: 1.5rem 1.25rem 2rem;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1.75rem;
-  min-height: 120px;
+  min-height: 489px;
   box-sizing: border-box;
+  overflow: visible; /* was hidden */
+}
+
+.tab_bar {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.tab_btn {
+  width: 128px;
+  height: 40px;
+  background: #d9d9d9;
+  border: none;
+  cursor: pointer;
+  font-family: Inter, var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #000000;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab_btn:hover {
+  background: #c8c8c8;
+}
+
+.tab_btn_active {
+  background: #a0a0a0;
+  color: #000;
+}
+
+.tab_content {
+  flex: 1;
+  padding: 1.5rem 1.25rem 2rem;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .folder_row {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 3rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
   width: 100%;
+  padding-top: 2rem;
+  overflow: visible;
 }
 
 .profile-folder-slot {
@@ -212,6 +247,12 @@
   align-items: center;
   gap: 0.5rem;
   margin: 0;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  transform: scale(0.75);
+  transform-origin: top center;
+  overflow: visible;
 }
 
 .profile-folder-label {
