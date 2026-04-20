@@ -70,6 +70,16 @@ export default function ArtworkPost({
   const buttonOpenLabel = isOwnerArtwork ? "View Responses" : "Leave Feedback";
   const buttonCloseLabel = isOwnerArtwork ? "Close Responses" : "Close Feedback";
 
+  const feedbackButton = canInteract ? (
+    <button
+      className={styles.feedbackButton}
+      onClick={() => setFeedbackOpen(!feedbackOpen)}
+      disabled={!hasFeedbackForm && !isOwnerArtwork}
+    >
+      {feedbackOpen ? buttonCloseLabel : buttonOpenLabel}
+    </button>
+  ) : null;
+
   return (
     <div className={styles.page}>
       <div className={styles.mainFrame}>
@@ -89,15 +99,6 @@ export default function ArtworkPost({
             <div className={!canInteract ? styles.captionFrameLockedContent : ""}>
               <h1 className={styles.artworkTitle}>{title}</h1>
               <p className={styles.description}>{description}</p>
-              {canInteract ? (
-                <button
-                  className={styles.feedbackButton}
-                  onClick={() => setFeedbackOpen(!feedbackOpen)}
-                  disabled={!hasFeedbackForm && !isOwnerArtwork}
-                >
-                  {feedbackOpen ? buttonCloseLabel : buttonOpenLabel}
-                </button>
-              ) : null}
             </div>
             {!canInteract ? (
               <Link href="/login" className={styles.captionLoginMessage}>
@@ -111,33 +112,39 @@ export default function ArtworkPost({
         {!feedbackOpen && (
           <div className={styles.sidebar}>
             {artistProfileHref ? (
-              <Link href={artistProfileHref} prefetch={false} className={styles.artistInfo}>
-                {artistAvatarUrl ? (
-                  <img
-                    src={artistAvatarUrl}
-                    alt={artistName}
-                    className={styles.avatar}
-                  />
-                ) : (
-                  <div className={styles.avatarPlaceholder} />
-                )}
-                <span className={styles.username}>{artistName}</span>
-              </Link>
+              <div className={styles.artistInfo}>
+                <Link href={artistProfileHref} prefetch={false} className={styles.artistInfoTop}>
+                  {artistAvatarUrl ? (
+                    <img
+                      src={artistAvatarUrl}
+                      alt={artistName}
+                      className={styles.avatar}
+                    />
+                  ) : (
+                    <div className={styles.avatarPlaceholder} />
+                  )}
+                  <span className={styles.username}>{artistName}</span>
+                </Link>
+                {feedbackButton}
+              </div>
             ) : (
               <div className={styles.artistInfo}>
-                {artistAvatarUrl ? (
-                  <img
-                    src={artistAvatarUrl}
-                    alt={artistName}
-                    className={styles.avatar}
-                  />
-                ) : (
-                  <div className={styles.avatarPlaceholder} />
-                )}
-                <span className={styles.username}>{artistName}</span>
+                <div className={styles.artistInfoTop}>
+                  {artistAvatarUrl ? (
+                    <img
+                      src={artistAvatarUrl}
+                      alt={artistName}
+                      className={styles.avatar}
+                    />
+                  ) : (
+                    <div className={styles.avatarPlaceholder} />
+                  )}
+                  <span className={styles.username}>{artistName}</span>
+                </div>
+                {feedbackButton}
               </div>
             )}
-            
+
             <div className={styles.otherPostsSection}>
               <h2 className={styles.otherPostsHeading}>More from {artistName}</h2>
               {otherPosts.length > 0 ? (
