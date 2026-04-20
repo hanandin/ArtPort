@@ -14,7 +14,7 @@
   bottom: 0;
   border-radius: 12px 12px 12px 12px;
   overflow: visible;
-  clip-path: inset(-56px -14px 0 -14px);
+  clip-path: inset(-200px -14px 0 -14px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
