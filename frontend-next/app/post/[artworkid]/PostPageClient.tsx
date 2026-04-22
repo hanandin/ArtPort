@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import ArtworkPost from "@/components/ArtworkPost";
 import {
@@ -25,15 +24,15 @@ import {
 } from "@/lib/feedbackApi";
 import { getClientAuthToken } from "@/lib/authSession";
 import { fetchCurrentUser } from "@/lib/currentUserApi";
-import { hideArtworkFromGallery, isArtworkHidden } from "@/lib/hiddenArtworkIds";
 import type { FeedbackFormConfig } from "@/types/feedback";
+
+const USER_STATE_EVENT = "artport-user-updated";
 
 type Props = {
   segment: string;
 };
 
 export default function PostPageClient({ segment }: Props) {
-  const router = useRouter();
   const [artwork, setArtwork] = useState<ApiArtworkDetail | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -43,7 +42,20 @@ export default function PostPageClient({ segment }: Props) {
   const [isOwnerArtwork, setIsOwnerArtwork] = useState(false);
   const [receivedResponses, setReceivedResponses] = useState<ApiFeedbackResponse[]>([]);
   const [otherPosts, setOtherPosts] = useState<{ id: string; imageSrc: string; title: string }[]>([]);
-  const isAuthenticated = Boolean(getClientAuthToken());
+  const [isAuthenticated, setIsAuthenticated] = useState(() =>
+    Boolean(getClientAuthToken())
+  );
+
+  useEffect(() => {
+    const syncAuth = () => setIsAuthenticated(Boolean(getClientAuthToken()));
+    syncAuth();
+    window.addEventListener(USER_STATE_EVENT, syncAuth);
+    window.addEventListener("storage", syncAuth);
+    return () => {
+      window.removeEventListener(USER_STATE_EVENT, syncAuth);
+      window.removeEventListener("storage", syncAuth);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +73,14 @@ export default function PostPageClient({ segment }: Props) {
 
         const artist = artworkArtistFromDetail(data);
         const token = getClientAuthToken();
-        const currentUser = token ? await fetchCurrentUser(token) : null;
+        let currentUser: Awaited<ReturnType<typeof fetchCurrentUser>> | null = null;
+        if (token) {
+          try {
+            currentUser = await fetchCurrentUser(token);
+          } catch {
+            currentUser = null;
+          }
+        }
         const isOwner =
           Boolean(currentUser?._id) &&
           Boolean(artist.userId) &&
@@ -85,7 +104,6 @@ export default function PostPageClient({ segment }: Props) {
 
         let form: ApiFeedbackForm | null = null;
 
-        // 1) Try stored formId (reliable by-ID endpoint)
         if (token) {
           try {
             const storedFormId = localStorage.getItem(
@@ -96,12 +114,15 @@ export default function PostPageClient({ segment }: Props) {
                 () => null
               );
             }
-          } catch { /* localStorage unavailable */ }
+          } catch {}
         }
 
-        // 2) Fall back to artwork-based search
         if (!form) {
-          form = await fetchFeedbackFormByArtworkId(data._id, token);
+          try {
+            form = await fetchFeedbackFormByArtworkId(data._id, token);
+          } catch {
+            form = null;
+          }
         }
 
         if (cancelled) return;
@@ -109,12 +130,18 @@ export default function PostPageClient({ segment }: Props) {
           setFeedbackConfig(mapApiFormToConfig(form));
           setFeedbackFormId(String(form._id));
           if (isOwner && token) {
-            const responses = await fetchReceivedFeedbackResponses(
-              String(form._id),
-              token
-            );
-            if (!cancelled) {
-              setReceivedResponses(responses);
+            try {
+              const responses = await fetchReceivedFeedbackResponses(
+                String(form._id),
+                token
+              );
+              if (!cancelled) {
+                setReceivedResponses(responses);
+              }
+            } catch {
+              if (!cancelled) {
+                setReceivedResponses([]);
+              }
             }
           }
         }
@@ -131,13 +158,6 @@ export default function PostPageClient({ segment }: Props) {
       cancelled = true;
     };
   }, [segment]);
-
-  useEffect(() => {
-    if (!artwork?._id || !isOwnerArtwork) return;
-    if (isArtworkHidden(String(artwork._id))) {
-      router.replace("/me");
-    }
-  }, [artwork?._id, isOwnerArtwork, router]);
 
   if (loading) {
     return (
@@ -182,19 +202,6 @@ export default function PostPageClient({ segment }: Props) {
       feedbackFormId={feedbackFormId ?? undefined}
       isOwnerArtwork={isOwnerArtwork}
       isAuthenticated={isAuthenticated}
-      showDeletePost={isOwnerArtwork}
-      onDeletePost={() => {
-        if (!artwork?._id) return;
-        if (
-          !confirm(
-            "Remove this post from your gallery on this device? (There is no delete API yet—this only hides it in your browser.)"
-          )
-        ) {
-          return;
-        }
-        hideArtworkFromGallery(String(artwork._id));
-        router.push("/me");
-      }}
       receivedResponses={receivedResponses}
       otherPosts={otherPosts}
     />

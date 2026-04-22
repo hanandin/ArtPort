@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import QuestionField from "@/components/questions/QuestionField";
 import CheckboxOption from "@/components/questions/CheckboxOption";
@@ -15,6 +16,7 @@ import type {
 } from "@/types/feedback";
 import {
   createFeedbackForm,
+  fetchFeedbackFormByArtworkId,
   mapFeedbackQuestionsToCreatePayload,
 } from "@/lib/feedbackApi";
 import { getClientAuthToken } from "@/lib/authSession";
@@ -35,6 +37,7 @@ export default function FeedbackQuestionSelect({
   config,
   initialArtworkId = "",
 }: Props) {
+  const router = useRouter();
   const [customTextQuestions, setCustomTextQuestions] = useState<
     FeedbackQuestionText[]
   >([]);
@@ -85,7 +88,7 @@ export default function FeedbackQuestionSelect({
       TEXT_LIMITS.feedbackQuestionHelp
     ).trim();
     const detail = helpRaw || undefined;
-    const id = `custom-${crypto.randomUUID()}`;
+    const id = `custom-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
     const q: FeedbackQuestionText = {
       id,
       type: "text",
@@ -144,8 +147,27 @@ export default function FeedbackQuestionSelect({
 
     try {
       setSubmitting(true);
+      const existingForm = await fetchFeedbackFormByArtworkId(
+        trimmedArtworkId,
+        token
+      );
+      if (existingForm?._id) {
+        const existingId = String(existingForm._id);
+        setCreatedFormId(existingId);
+        try {
+          localStorage.setItem(`artport_form_for_${trimmedArtworkId}`, existingId);
+        } catch {}
+        router.replace(`/post/${encodeURIComponent(trimmedArtworkId)}`);
+        return;
+      }
+
       const created = await createFeedbackForm(trimmedArtworkId, payload, token);
-      setCreatedFormId(String(created._id));
+      const createdId = String(created._id);
+      setCreatedFormId(createdId);
+      try {
+        localStorage.setItem(`artport_form_for_${trimmedArtworkId}`, createdId);
+      } catch {}
+      router.replace(`/post/${encodeURIComponent(trimmedArtworkId)}`);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Could not create form.");
     } finally {
@@ -154,7 +176,7 @@ export default function FeedbackQuestionSelect({
   };
 
   const pageTitle =
-    config.selectPageTitle ?? "Choose questions for your feedback form";
+    config.selectPageTitle ?? "Customize your feedback form";
   const answerCap = TEXT_LIMITS.feedbackTextAnswer;
   return (
     <div>

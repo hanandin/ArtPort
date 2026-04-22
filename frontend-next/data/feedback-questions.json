@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "title": "artwork feedback",
   "description": "Tell us what you think about the artwork",
-  "selectPageTitle": "Choose questions for your feedback form",
-  "selectPageHint": "Uncheck any question you don't want on this form. The preview matches how they will look to respondents (answers are disabled here).",
+  "selectPageTitle": "Customize your feedback form",
+  "selectPageHint": "Select a predesigned feedback form or create a custom feedback form.",
   "questions": [
     {
       "id": "overall_experience",

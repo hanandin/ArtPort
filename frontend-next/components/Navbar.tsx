@@ -60,21 +60,22 @@ export default function Navbar() {
         }
     }, [syncUserState])
 
-    const handleSearch = (query: string, filter: string) => {
-        console.log("Searching:", query, "Filter:", filter)
+    const handleSearch = (_query: string, _filter: string) => {
+        void _query
+        void _filter
     }
 
     const handleSelectResult = (item: SearchResultItem) => {
         if (item.type === "artist" && item.username) {
             router.push(`/user/${encodeURIComponent(item.username)}`)
         } else if (item.type === "artwork" && item.id) {
-            console.log("Artwork clicked:", item.id)
             router.push(`/post/${encodeURIComponent(item.id)}`)
         }
     }
 
     const handleLogout = () => {
         clearAuthSession()
+        window.dispatchEvent(new Event(USER_STATE_EVENT))
         setIsLoggedIn(false)
         setIsOpen(false)
         setAvatarSrc(DEFAULT_AVATAR)

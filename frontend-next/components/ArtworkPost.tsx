@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 
 import styles from "./ArtworkPost.module.css";
@@ -48,9 +49,18 @@ export default function ArtworkPost({
   receivedResponses = [],
   otherPosts = [],
 }: ArtworkPostProps) {
+  const pathname = usePathname();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const canInteract = isAuthenticated;
   const hasFeedbackForm = Boolean(feedbackConfig && feedbackFormId);
+  const loginHref =
+    pathname && pathname.startsWith("/")
+      ? `/login?next=${encodeURIComponent(pathname)}`
+      : "/login";
+  const noFormForVisitor = canInteract && !hasFeedbackForm && !isOwnerArtwork;
+  const feedbackDisabledTitle = noFormForVisitor
+    ? "The artist has not set up a feedback form for this artwork yet."
+    : undefined;
   const buttonOpenLabel = isOwnerArtwork
     ? "Feedback summary"
     : "Leave Feedback";
@@ -58,9 +68,11 @@ export default function ArtworkPost({
 
   const feedbackButton = canInteract ? (
     <button
+      type="button"
       className={styles.feedbackButton}
       onClick={() => setFeedbackOpen(!feedbackOpen)}
-      disabled={!hasFeedbackForm && !isOwnerArtwork}
+      disabled={noFormForVisitor}
+      title={feedbackDisabledTitle}
     >
       {feedbackOpen ? buttonCloseLabel : buttonOpenLabel}
     </button>
@@ -88,12 +100,20 @@ export default function ArtworkPost({
               {canInteract ? (
                 <div className={styles.feedbackActions}>
                   <button
+                    type="button"
                     className={styles.feedbackButton}
                     onClick={() => setFeedbackOpen(!feedbackOpen)}
-                    disabled={!hasFeedbackForm && !isOwnerArtwork}
+                    disabled={noFormForVisitor}
+                    title={feedbackDisabledTitle}
                   >
                     {feedbackOpen ? buttonCloseLabel : buttonOpenLabel}
                   </button>
+                  {noFormForVisitor ? (
+                    <p className={styles.feedbackNoFormHint} role="note">
+                      There is no feedback form on this post yet. The artist
+                      creates one after uploading (feedback setup step).
+                    </p>
+                  ) : null}
                   {showDeletePost && onDeletePost ? (
                     <button
                       type="button"
@@ -107,7 +127,7 @@ export default function ArtworkPost({
               ) : null}
             </div>
             {!canInteract ? (
-              <Link href="/login" className={styles.captionLoginMessage}>
+              <Link href={loginHref} className={styles.captionLoginMessage}>
                 Log in to interact with this post.
               </Link>
             ) : null}
@@ -132,6 +152,11 @@ export default function ArtworkPost({
                   <span className={styles.username}>{artistName}</span>
                 </Link>
                 {feedbackButton}
+                {!canInteract && !isOwnerArtwork ? (
+                  <Link href={loginHref} className={styles.feedbackLoginHint}>
+                    Log in to leave feedback
+                  </Link>
+                ) : null}
               </div>
             ) : (
               <div className={styles.artistInfo}>
@@ -148,6 +173,11 @@ export default function ArtworkPost({
                   <span className={styles.username}>{artistName}</span>
                 </div>
                 {feedbackButton}
+                {!canInteract && !isOwnerArtwork ? (
+                  <Link href={loginHref} className={styles.feedbackLoginHint}>
+                    Log in to leave feedback
+                  </Link>
+                ) : null}
               </div>
             )}
 

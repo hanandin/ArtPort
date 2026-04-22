@@ -14,7 +14,6 @@ import {
 import { getClientAuthToken } from "@/lib/authSession";
 import { fetchCurrentUser } from "@/lib/currentUserApi";
 import { apiFetch } from "@/lib/apiClient";
-import { filterHiddenArtworkIds } from "@/lib/hiddenArtworkIds";
 import { patchUserBio } from "@/lib/userBioApi";
 const USER_STATE_EVENT = "artport-user-updated";
 
@@ -135,19 +134,14 @@ function MePageContent() {
       const mapped = data
         .filter((artwork) => artworkMatchesUserId(artwork, userId))
         .map((artwork, index) => mapArtworkToProfileItem(artwork, index));
-      setUserPosts(filterHiddenArtworkIds(mapped));
+      setUserPosts(mapped);
+    }).catch(() => {
+      setUserPosts([]);
     });
   }, [userId]);
 
   useEffect(() => {
     loadUserPosts();
-  }, [loadUserPosts]);
-
-  useEffect(() => {
-    const onHidden = () => loadUserPosts();
-    window.addEventListener("artport-hidden-artworks-changed", onHidden);
-    return () =>
-      window.removeEventListener("artport-hidden-artworks-changed", onHidden);
   }, [loadUserPosts]);
 
   const visibleUserPosts = userId ? userPosts : [];

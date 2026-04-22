@@ -264,6 +264,38 @@
   background: #e08e30;
 }
 
+.feedbackButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.feedbackButton:disabled:hover {
+  background: #f29f41;
+}
+
+.feedbackNoFormHint {
+  margin: 0;
+  flex: 1 1 100%;
+  max-width: 420px;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #5a4d3f;
+}
+
+.feedbackLoginHint {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #215a80;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.feedbackLoginHint:hover {
+  color: #1a4666;
+}
+
 .deletePostButton {
   min-height: 36px;
   padding: 0 14px;

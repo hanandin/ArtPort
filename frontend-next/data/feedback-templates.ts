@@ -15,9 +15,9 @@ const quickPoll: FeedbackFormConfig = {
   schemaVersion: 1,
   title: "quick poll",
   description: "Fast feedback with ratings and one short text.",
-  selectPageTitle: "Build your quick poll form",
+  selectPageTitle: "Customize your feedback form",
   selectPageHint:
-    "Pick a template, toggle questions, or add your own text questions below.",
+    "Select a predesigned feedback form or create a custom feedback form.",
   questions: [
     {
       id: "qp_overall",
@@ -54,9 +54,9 @@ const deepCritique: FeedbackFormConfig = {
   schemaVersion: 1,
   title: "critique",
   description: "Structured critique for serious feedback sessions.",
-  selectPageTitle: "Build a critique form",
+  selectPageTitle: "Customize your feedback form",
   selectPageHint:
-    "Combine template blocks with custom questions before creating the form.",
+    "Select a predesigned feedback form or create a custom feedback form.",
   questions: [
     {
       id: "crit_strength",
@@ -95,8 +95,9 @@ const minimal: FeedbackFormConfig = {
   schemaVersion: 1,
   title: "minimal",
   description: "Just a rating and a short comment.",
-  selectPageTitle: "Minimal form",
-  selectPageHint: "Smallest set — add more from custom questions if you like.",
+  selectPageTitle: "Customize your feedback form",
+  selectPageHint:
+    "Select a predesigned feedback form or create a custom feedback form.",
   questions: [
     {
       id: "min_rating",

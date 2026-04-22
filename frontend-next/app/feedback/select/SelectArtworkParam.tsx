@@ -26,10 +26,9 @@ export default function SelectArtworkParam() {
   return (
     <div className={styles.selectFlow}>
       <section className={styles.templateSection} aria-label="Form templates">
-        <h2 className={styles.templateHeading}>Start from a template</h2>
+        <h2 className={styles.templateHeading}>Feedback form</h2>
         <p className={styles.templateIntro}>
-          Pick a preset, then include or exclude questions, add custom text
-          fields, and create the form — all in the browser.
+          Select a predesigned feedback form or create a custom feedback form.
         </p>
         <div className={styles.templateGrid}>
           {FEEDBACK_FORM_TEMPLATES.map((t) => (

@@ -12,7 +12,13 @@ function getErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : "Something went wrong";
 }
 
-const LoginCard: React.FC = () => {
+type LoginCardProps = {
+  redirectAfterLogin?: string;
+};
+
+const LoginCard: React.FC<LoginCardProps> = ({
+  redirectAfterLogin = "/me",
+}) => {
   const router = useRouter();
   const [isSignup, setIsSignup] = useState(false);
   const [username, setUsername] = useState("");
@@ -51,7 +57,7 @@ const LoginCard: React.FC = () => {
       });
       window.dispatchEvent(new Event(USER_STATE_EVENT));
 
-      router.push("/me");
+      router.push(redirectAfterLogin || "/me");
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
@@ -97,7 +103,7 @@ const LoginCard: React.FC = () => {
       });
       window.dispatchEvent(new Event(USER_STATE_EVENT));
 
-      router.push("/me");
+      router.push(redirectAfterLogin || "/me");
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {

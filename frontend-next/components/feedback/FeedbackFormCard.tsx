@@ -145,7 +145,6 @@ export default function FeedbackFormCard({
     } catch {
       /* ignore */
     }
-    console.log("Feedback submission", payload);
     setSubmitted(true);
   };
 
