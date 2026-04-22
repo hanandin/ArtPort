@@ -101,7 +101,13 @@ export default function Navbar() {
             display: 'flex',
             alignItems: 'center',
             padding: '12px',
-            gap: '16px'
+            gap: '16px',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
         }}>
 
             {/* Logo */}

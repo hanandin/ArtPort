@@ -6,7 +6,7 @@ import ArtworkPost from "@/components/ArtworkPost";
 import {
   FEED_ARTWORK_PLACEHOLDER,
   artworkArtistFromDetail,
-  artworkDetailImageUrl,
+  artworkFullImageUrl,
   fetchArtworkForPost,
   resolveApiAssetUrl,
   fetchArtworks,
@@ -173,7 +173,7 @@ export default function PostPageClient({ segment }: Props) {
     );
   }
 
-  const rawImg = artworkDetailImageUrl(artwork);
+  const rawImg = artworkFullImageUrl(artwork);
   const imageUrl = rawImg
     ? resolveApiAssetUrl(rawImg) || rawImg
     : FEED_ARTWORK_PLACEHOLDER;

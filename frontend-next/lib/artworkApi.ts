@@ -100,6 +100,16 @@ export function artworkDetailImageUrl(
   );
 }
 
+export function artworkFullImageUrl(
+  artwork: Pick<ApiArtworkCommon, "thumbnailPath" | "filePath" | "imageUrl">
+): string {
+  return (
+    resolveApiAssetUrl(artwork.filePath) ||
+    resolveApiAssetUrl(artwork.thumbnailPath) ||
+    resolveApiAssetUrl(artwork.imageUrl)
+  );
+}
+
 export function artworkArtistFromDetail(
   artwork: ApiArtworkCommon
 ): ArtworkArtist {
