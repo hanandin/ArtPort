@@ -16,9 +16,27 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const allowedOrigins = new Set([
+  "http://localhost:3000",
+  "https://ibrax2.github.io",
+  "https://art-port-three.vercel.app",
+  process.env.FRONTEND_URL,
+]);
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://ibrax2.github.io", "https:///art-port-three.vercel.app"],
+    origin: (origin, callback) => {
+      // Allow non-browser/server-to-server requests with no origin header.
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS not allowed for origin: ${origin}`));
+    },
     credentials: true,
   }),
 );
