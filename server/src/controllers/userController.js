@@ -259,13 +259,31 @@ export const updateUser = async (req, res) => {
 
     if (req.body.username) {
       // Check for profanity in username, send message if found.
-      if (profanity.exists(req.body.username)) {
-        return res.status(400).json({ message: "Username contains inappropriate content" });
+      if (profanity.exists(req.body.username))  return res.status(400).json({ message: "Username contains inappropriate content" });
+      if (req.body.username.trim() === "")      return res.status(400).json({ message: "Username cannot be empty" });
+      
+      // Check if the username is already taken by another user (excluding current user)
+      const usernameExists = await User.findOne({ username: trimmedUsername });
+      if (usernameExists && String(usernameExists._id) !== String(req.user._id)) {
+        return res.status(400).json({ message: "User with this username already exists" });
       }
-      // Good to update username if no profanity detected.
+
+      // Good to update username if no issues detected.
       user.username = req.body.username;
     }
-    if (req.body.email) user.email = req.body.email;
+
+    if (req.body.email) {
+      if (req.body.email.trim() === "") return res.status(400).json({ message: "Email cannot be empty" });
+
+      // Check if the email is already taken by another user (excluding current user)
+      const emailExists = await User.findOne({ email: trimmedEmail });
+      if (emailExists && String(emailExists._id) !== String(req.user._id)) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Good to update email if no issues detected.
+      user.email = req.body.email.trim();
+    }
     if (req.body.bio) {
       // Check for profanity in bio, send message if found.
       if (profanity.exists(req.body.bio)) {
