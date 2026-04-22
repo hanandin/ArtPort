@@ -22,12 +22,12 @@ export const searchUsers = async (req, res) => {
       {
         $search: {
           index: "username_search",
-          text: {
+          autocomplete: {
             query: query,
             path: "username",
             fuzzy: {
               maxEdits: 2,
-              prefixLength: 0,
+              prefixLength: 2,
             },
           },
         },
