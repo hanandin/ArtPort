@@ -22,14 +22,26 @@ export const searchUsers = async (req, res) => {
       {
         $search: {
           index: "username_search",
-          autocomplete: {
-            query: query,
-            path: "username",
-            fuzzy: {
-              maxEdits: 2,
-              prefixLength: 2,
+          compound: {
+            should: [{
+              // Exact autocomplete matches on username with high boost to prioritize them in results.
+              autocomplete: {
+                query: query,
+                path: "username",
+                score: { boost: { value: 5 } } // Strongly boost exact autocomplete matches to rank them higher than fuzzy matches.
+              }
             },
-          },
+            {
+              // Fuzzy search as a fallback to catch misspellings, but with lower boost than exact autocomplete matches.
+              autocomplete: {
+                query: query,
+                path: "username",
+                fuzzy: {
+                  maxEdits: 2,
+                }
+              }
+            }]
+          }
         },
       },
       {
