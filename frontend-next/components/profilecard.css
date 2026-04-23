@@ -160,6 +160,16 @@
   opacity: 0.55;
 }
 
+.profile_contact_email {
+  margin: 0.5rem 0 0;
+  color: #215a80;
+  font-family: Inter, var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
 .profile_bio_edit_wrap {
   margin-top: 0.5rem;
   max-width: 359px;

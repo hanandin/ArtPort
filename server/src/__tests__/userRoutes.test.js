@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import request from "supertest";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 import userRoutes from "../routes/userRoutes.js";
@@ -102,5 +103,69 @@ describe("User API routes", () => {
     expect(res.status).toBe(200);
     expect(res.body.bio).toBe("New bio text");
     expect(res.body._id).toBe(String(user._id));
+  });
+
+  test("PATCH /api/users/:id can update privacy and profile email visibility", async () => {
+    const { user, token } = await createUserWithToken({
+      username: "privacyUser",
+      email: "privacyUser@example.com",
+    });
+
+    const res = await request(app)
+      .patch(`/api/users/${user._id}`)
+      .set(makeAuthHeader(token))
+      .send({ isPrivate: true, showEmailOnProfile: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.isPrivate).toBe(true);
+    expect(res.body.showEmailOnProfile).toBe(true);
+  });
+
+  test("PATCH /api/users/:id can change password with the current password", async () => {
+    const passwordHash = await bcrypt.hash("OldPass123!", 10);
+    const user = await User.create({
+      username: "passwordUser",
+      email: "passwordUser@example.com",
+      passwordHash,
+    });
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+
+    const res = await request(app)
+      .patch(`/api/users/${user._id}`)
+      .set(makeAuthHeader(token))
+      .send({
+        currentPassword: "OldPass123!",
+        newPassword: "NewPass123!",
+        confirmNewPassword: "NewPass123!",
+      });
+
+    expect(res.status).toBe(200);
+
+    const updatedUser = await User.findById(user._id);
+    expect(updatedUser).not.toBeNull();
+    expect(await bcrypt.compare("NewPass123!", updatedUser.passwordHash)).toBe(
+      true,
+    );
+  });
+
+  test("GET /api/users/by-username/:username only exposes a private notice for private accounts", async () => {
+    const user = await User.create({
+      username: "hiddenArtist",
+      email: "hiddenArtist@example.com",
+      passwordHash: "hashed-password",
+      bio: "Secret bio",
+      isPrivate: true,
+      showEmailOnProfile: true,
+    });
+
+    const res = await request(app).get(
+      `/api/users/by-username/${encodeURIComponent(user.username)}`,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.username).toBe("hiddenArtist");
+    expect(res.body.isPrivate).toBe(true);
+    expect(res.body.bio).toBeUndefined();
+    expect(res.body.email).toBeUndefined();
   });
 });

@@ -223,21 +223,7 @@ export default function Navbar() {
                                 </Link>
 
                                 <Link
-                                    href="/me"
-                                    onClick={() => setIsOpen(false)}
-                                    style={{
-                                        color: '#f29f41',
-                                        fontWeight: 'bold',
-                                        textDecoration: 'none',
-                                        display: 'block',
-                                        padding: '8px'
-                                    }}
-                                >
-                                    My Works
-                                </Link>
-
-                                <Link
-                                    href=""
+                                    href="/settings"
                                     onClick={() => setIsOpen(false)}
                                     style={{
                                         color: '#f29f41',

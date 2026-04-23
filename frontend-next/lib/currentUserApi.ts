@@ -8,6 +8,8 @@ export type CurrentUserProfile = {
   bio?: string;
   profilePictureUrl?: string;
   bannerPictureUrl?: string;
+  showEmailOnProfile?: boolean;
+  isPrivate?: boolean;
 };
 
 export async function fetchCurrentUser(

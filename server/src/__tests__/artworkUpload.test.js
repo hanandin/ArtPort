@@ -1,9 +1,11 @@
 import { jest } from "@jest/globals";
 
 const mockArtworkSave = jest.fn();
+const mockArtworkFind = jest.fn();
 const mockArtworkConstructor = jest.fn(() => ({
   save: mockArtworkSave,
 }));
+mockArtworkConstructor.find = mockArtworkFind;
 
 // Mock the dependencies correctly for ESM
 jest.unstable_mockModule("../models/Artwork.js", () => ({
@@ -15,7 +17,7 @@ jest.unstable_mockModule("../controllers/imageUploadController.js", () => ({
   uploadImageToS3: mockUploadImageToS3,
 }));
 
-const { createArtwork } = await import("../controllers/artworkController.js");
+const { createArtwork, getArtworks } = await import("../controllers/artworkController.js");
 
 describe("Artwork Controller - Upload functionality", () => {
   let req, res;
@@ -115,6 +117,44 @@ describe("Artwork Controller - Upload functionality", () => {
       // Should return 400 or appropriate error code wrapping the upload crash
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ message: mockError.message });
+    });
+  });
+
+  describe("getArtworks", () => {
+    it("should omit artworks from private users", async () => {
+      const privateArtwork = {
+        _id: "private-art",
+        title: "Hidden Work",
+        filePath: "https://example.com/private.jpg",
+        userId: {
+          _id: "user-private",
+          username: "hiddenArtist",
+          profilePictureUrl: "https://example.com/avatar.jpg",
+          isPrivate: true,
+        },
+      };
+      const publicArtwork = {
+        _id: "public-art",
+        title: "Visible Work",
+        filePath: "https://example.com/public.jpg",
+        userId: {
+          _id: "user-public",
+          username: "openArtist",
+          profilePictureUrl: "https://example.com/avatar2.jpg",
+          isPrivate: false,
+        },
+      };
+
+      mockArtworkFind.mockReturnValue({
+        populate: jest.fn().mockResolvedValue([privateArtwork, publicArtwork]),
+      });
+
+      await getArtworks(req, res);
+
+      expect(res.json).toHaveBeenCalledWith([
+        expect.objectContaining({ _id: "public-art" }),
+      ]);
+      expect(res.json.mock.calls[0][0]).toHaveLength(1);
     });
   });
 });

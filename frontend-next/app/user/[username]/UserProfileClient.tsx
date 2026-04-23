@@ -22,6 +22,7 @@ type ApiUserProfile = {
   bio?: string;
   profilePictureUrl?: string;
   bannerPictureUrl?: string;
+  showEmailOnProfile?: boolean;
 };
 
 export default function UserProfileClient({
@@ -32,6 +33,8 @@ export default function UserProfileClient({
   const router = useRouter();
   const [username, setUsername] = useState(usernameParam || "Artist");
   const [bio, setBio] = useState("");
+  const [email, setEmail] = useState<string | undefined>(undefined);
+  const [showEmailOnProfile, setShowEmailOnProfile] = useState(false);
   const [userId, setUserId] = useState<string | undefined>(undefined);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   const [bannerPictureUrl, setBannerPictureUrl] = useState<string | undefined>(undefined);
@@ -74,6 +77,8 @@ export default function UserProfileClient({
         if (cancelled || !data) return;
         if (data.username) setUsername(data.username);
         if (typeof data.bio === "string") setBio(data.bio);
+        setEmail(data.email);
+        setShowEmailOnProfile(Boolean(data.showEmailOnProfile));
         if (data._id) {
           setUserId(String(data._id));
         }
@@ -110,6 +115,7 @@ export default function UserProfileClient({
   const profileCardKey = [
     usernameParam,
     username,
+    email ?? "",
     profilePictureUrl ?? "",
     bannerPictureUrl ?? "",
   ].join("|");
@@ -124,6 +130,7 @@ export default function UserProfileClient({
         avatarSrc={profilePictureUrl}
         bannerSrc={bannerPictureUrl}
         bio={bio}
+        contactEmail={showEmailOnProfile ? email : undefined}
         followers={0}
         following={0}
         posts={postCount}

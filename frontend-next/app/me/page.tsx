@@ -24,11 +24,14 @@ type ApiUserProfile = {
   bio?: string;
   profilePictureUrl?: string;
   bannerPictureUrl?: string;
+  showEmailOnProfile?: boolean;
 };
 
 function MePageContent() {
   const [username, setUsername] = useState("Artist");
   const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [email, setEmail] = useState<string | undefined>(undefined);
+  const [showEmailOnProfile, setShowEmailOnProfile] = useState(false);
   const [bio, setBio] = useState("");
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   const [bannerPictureUrl, setBannerPictureUrl] = useState<string | undefined>(undefined);
@@ -96,6 +99,8 @@ function MePageContent() {
 
       if (data.username) setUsername(data.username);
       setUserId(String(data._id));
+      setEmail(data.email);
+      setShowEmailOnProfile(Boolean(data.showEmailOnProfile));
       if (typeof data.bio === "string") setBio(data.bio);
       if (data.profilePictureUrl) setProfilePictureUrl(data.profilePictureUrl);
       if (data.bannerPictureUrl) setBannerPictureUrl(data.bannerPictureUrl);
@@ -116,6 +121,8 @@ function MePageContent() {
       .then((data: ApiUserProfile | null) => {
         if (cancelled || !data) return;
         if (data.username) setUsername(data.username);
+        setEmail(data.email);
+        setShowEmailOnProfile(Boolean(data.showEmailOnProfile));
         if (typeof data.bio === "string") setBio(data.bio);
         if (data.profilePictureUrl) setProfilePictureUrl(data.profilePictureUrl);
         if (data.bannerPictureUrl) setBannerPictureUrl(data.bannerPictureUrl);
@@ -173,6 +180,7 @@ function MePageContent() {
         avatarSrc={profilePictureUrl}
         bannerSrc={bannerPictureUrl}
         bio={bio}
+        contactEmail={showEmailOnProfile ? email : undefined}
         followers={0}
         following={0}
         posts={postCount}

@@ -17,6 +17,7 @@ export type { ProfilePostItem };
 export type ProfileCardProps = {
   username: string;
   bio?: string;
+  contactEmail?: string;
   avatarSrc?: string;
   bannerSrc?: string;
   followers?: number;
@@ -53,6 +54,7 @@ function dataUrlToBlob(dataUrl: string): Blob | null {
 export default function ProfileCard({
   username,
   bio = "",
+  contactEmail,
   avatarSrc: avatarSrcProp,
   bannerSrc: bannerSrcProp,
   followers = 0,
@@ -255,6 +257,9 @@ export default function ProfileCard({
           ) : (
             <p className="profile_user_bio muted">No bio yet.</p>
           )}
+          {contactEmail ? (
+            <p className="profile_contact_email">{contactEmail}</p>
+          ) : null}
         </div>
 
         <div className="profile_stats_col">

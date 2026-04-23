@@ -16,9 +16,14 @@ export const getArtworks = async (req, res) => {
   try {
     const artworks = await Artwork.find().populate(
       "userId",
-      "_id username profilePictureUrl",
+      "_id username profilePictureUrl isPrivate",
     );
-    res.json(artworks.map((artwork) => withMediaDeliveryUrls(artwork)));
+
+    const visibleArtworks = artworks.filter(
+      (artwork) => !artwork.userId?.isPrivate,
+    );
+
+    res.json(visibleArtworks.map((artwork) => withMediaDeliveryUrls(artwork)));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

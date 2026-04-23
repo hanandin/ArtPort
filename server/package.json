@@ -16,6 +16,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@2toad/profanity": "^3.3.0",
     "@aws-sdk/client-s3": "^3.1000.0",
     "@aws-sdk/cloudfront-signer": "^3.1020.0",
     "bcrypt": "^5.1.1",
