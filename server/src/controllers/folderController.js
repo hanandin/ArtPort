@@ -2,6 +2,13 @@ import Folder from "../models/Folder.js";
 import Artwork from "../models/Artwork.js";
 import User from "../models/User.js";
 
+// Import profanity filter from outside package to check for inappropriate content in folder names
+import { Profanity } from '@2toad/profanity';
+const profanity = new Profanity({
+    // Include multiple languages for better coverage, but can be customized based on target audience
+    languages: ['ar', 'zh', 'en', 'fr', 'de', 'hi', 'it', 'ja', 'ko', 'pt', 'ru', 'es'],
+});
+
 // @desc    Create a new folder
 // @route   POST /api/folders
 // @access  Private
@@ -14,12 +21,11 @@ export const createFolder = async (req, res) => {
 
     const { folderName, parentFolderId, isPublic } = req.body;
 
-    // Validate folder name
-    if (!folderName || folderName.trim().length === 0) {
-      return res.status(400).json({ message: "Folder name is required" });
-    }
+    const truncatedFolderName = folderName.trim();
+    if (!truncatedFolderName) return res.status(400).json({ message: "Folder name is required" });
+    if (profanity.exists(truncatedFolderName)) return res.status(400).json({ message: "Folder name contains inappropriate content" });
 
-    if (folderName.trim().length > 100) {
+    if (truncatedFolderName.length > 100) {
       return res
         .status(400)
         .json({ message: "Folder name must be less than 100 characters" });
@@ -42,7 +48,7 @@ export const createFolder = async (req, res) => {
 
     const folder = await Folder.create({
       userId: req.user._id,
-      folderName: folderName.trim(),
+      folderName: truncatedFolderName,
       parentFolderId: parentFolderId || null,
       isPublic: isPublic !== undefined ? isPublic : true,
     });
@@ -194,11 +200,11 @@ export const renameFolder = async (req, res) => {
 
     const { folderName } = req.body;
 
-    if (!folderName || folderName.trim().length === 0) {
-      return res.status(400).json({ message: "Folder name is required" });
-    }
+    truncatedFolderName = folderName.trim();
+    if (!truncatedFolderName) return res.status(400).json({ message: "Folder name is required" });
+    if (profanity.exists(truncatedFolderName)) return res.status(400).json({ message: "Folder name contains inappropriate content" });
 
-    if (folderName.trim().length > 100) {
+    if (truncatedFolderName.length > 100) {
       return res
         .status(400)
         .json({ message: "Folder name must be less than 100 characters" });
@@ -220,7 +226,7 @@ export const renameFolder = async (req, res) => {
     // You might want to allow/disallow renaming "Portfolio" and "Archive"
     // For now, we'll allow renaming everything
 
-    folder.folderName = folderName.trim();
+    folder.folderName = truncatedFolderName;
     const updatedFolder = await folder.save();
 
     res.json(updatedFolder);

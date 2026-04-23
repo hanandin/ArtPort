@@ -2,6 +2,13 @@ import Artwork from "../models/Artwork.js";
 import { uploadImageToS3 } from "./imageUploadController.js";
 import { withMediaDeliveryUrls } from "../utils/mediaDelivery.js";
 
+// Import profanity filter from outside package to check for inappropriate content in artwork titles and descriptions
+import { Profanity } from '@2toad/profanity';
+const profanity = new Profanity({
+    // Include multiple languages for better coverage, but can be customized based on target audience
+    languages: ['ar', 'zh', 'en', 'fr', 'de', 'hi', 'it', 'ja', 'ko', 'pt', 'ru', 'es'],
+});
+
 // @desc    Get all artworks
 // @route   GET /api/artworks
 // @access  Public
@@ -23,6 +30,14 @@ export const getArtworks = async (req, res) => {
 export const createArtwork = async (req, res) => {
   try {
     const { title, description, userId } = req.body;
+
+    const truncatedTitle = title.trim();
+    // For description, we can allow empty but still check for profanity if provided
+    const truncatedDescription = description ? description.trim() : "";
+
+    if (!truncatedTitle) return res.status(400).json({ message: "Title is required" });
+    if (profanity.exists(truncatedTitle)) return res.status(400).json({ message: "Title contains inappropriate content" });
+    if (profanity.exists(truncatedDescription)) return res.status(400).json({ message: "Description contains inappropriate content" });
 
     // Handle image uploads through imageUploadController
     let filePath = req.body.filePath;
@@ -49,8 +64,8 @@ export const createArtwork = async (req, res) => {
 
     const artwork = new Artwork({
       userId,
-      title,
-      description,
+      title: truncatedTitle,
+      description: truncatedDescription,
       filePath,
       thumbnailPath,
     });

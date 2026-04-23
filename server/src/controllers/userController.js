@@ -5,6 +5,13 @@ import jwt from "jsonwebtoken";
 import { uploadImageToS3 } from "./imageUploadController.js";
 import { withUserDeliveryUrls } from "../utils/mediaDelivery.js";
 
+// Import profanity filter from outside package to check for inappropriate content in usernames and bios
+import { Profanity } from '@2toad/profanity';
+const profanity = new Profanity({
+    // Include multiple languages for better coverage, but can be customized based on target audience
+    languages: ['ar', 'zh', 'en', 'fr', 'de', 'hi', 'it', 'ja', 'ko', 'pt', 'ru', 'es'],
+});
+
 const AUTH_COOKIE_NAME = process.env.AUTHCOOKIE_NAME || "artport_token";
 
 // Generate JWT token
@@ -61,10 +68,44 @@ export const registerUser = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    const userExists = await User.findOne({ email });
+    // Truncate username and email to remove leading/trailing whitespace
+    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim();
 
-    if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
+    if (!trimmedUsername || !trimmedEmail || !password) {
+      return res.status(400).json({ message: "Username, email, and password are required" });
+    }
+
+    // Check for profanity in username, send message if found.
+    if (profanity.exists(trimmedUsername)) {
+      return res.status(400).json({ message: "Username contains inappropriate content" });
+    }
+
+    // const userExists = await User.findOne({ email });
+    const emailExists = await User.findOne({ email: trimmedEmail });
+    const usernameExists = await User.findOne({ username: trimmedUsername });
+
+    // if (userExists) {
+    if (emailExists) {
+      return res.status(400).json({ message: "User with this email already exists" });
+    }
+
+    if (usernameExists) {
+      return res.status(400).json({ message: "User with this username already exists" });
+    }
+
+    // Check password for invalid characters (only allow letters, numbers, and certain special characters)
+    const passwordCharactersRegex = /^[A-Za-z\d!?@#$%^&*()_+-=]{8,}$/;
+    if (!passwordCharactersRegex.test(password)) {
+      return res.status(400)
+        .json({ message: "Password contains invalid characters. Please use only letters, numbers, and the following special characters: !?@#$%^&*()_+-=" });
+    }
+
+    // Check password strength (at least 8 characters, including uppercase, lowercase, and numbers)
+    const passwordStrengthRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d!?@#$%^&*()_+-=]{8,}$/;
+    if (!passwordStrengthRegex.test(password)) {
+      return res.status(400)
+        .json({ message: "Password is too weak. It must be at least 8 characters long and include both uppercase and lowercase letters and numbers." });
     }
 
     // Hash password with bcrypt (10 salt rounds)
@@ -77,8 +118,8 @@ export const registerUser = async (req, res) => {
     }
 
     const user = await User.create({
-      username,
-      email,
+      username: trimmedUsername,
+      email: trimmedEmail,
       passwordHash,
       profilePictureUrl,
     });
@@ -101,10 +142,10 @@ export const registerUser = async (req, res) => {
         isPublic: true,
       });
 
-      // Create "Archive" folder
+      // Create "Bookmarks" folder
       await Folder.create({
         userId: user._id,
-        folderName: "Archive",
+        folderName: "Bookmarks",
         parentFolderId: rootFolder._id,
         isPublic: false,
       });
@@ -228,9 +269,41 @@ export const updateUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (req.body.username) user.username = req.body.username;
-    if (req.body.email) user.email = req.body.email;
-    if (req.body.bio) user.bio = req.body.bio;
+    if (req.body.username) {
+      // Check for profanity in username, send message if found.
+      if (profanity.exists(req.body.username))  return res.status(400).json({ message: "Username contains inappropriate content" });
+      if (req.body.username.trim() === "")      return res.status(400).json({ message: "Username cannot be empty" });
+      
+      // Check if the username is already taken by another user (excluding current user)
+      const usernameExists = await User.findOne({ username: req.body.username.trim() });
+      if (usernameExists && String(usernameExists._id) !== String(req.user._id)) {
+        return res.status(400).json({ message: "User with this username already exists" });
+      }
+
+      // Good to update username if no issues detected.
+      user.username = req.body.username.trim();
+    }
+
+    if (req.body.email) {
+      if (req.body.email.trim() === "") return res.status(400).json({ message: "Email cannot be empty" });
+
+      // Check if the email is already taken by another user (excluding current user)
+      const emailExists = await User.findOne({ email: req.body.email.trim() });
+      if (emailExists && String(emailExists._id) !== String(req.user._id)) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Good to update email if no issues detected.
+      user.email = req.body.email.trim();
+    }
+    if (req.body.bio) {
+      // Check for profanity in bio, send message if found.
+      if (profanity.exists(req.body.bio)) {
+        return res.status(400).json({ message: "Bio contains inappropriate content" });
+      }
+      // Good to update bio if no profanity detected.
+      user.bio = req.body.bio;
+    }
     if (req.body.bannerPictureUrl)
       user.bannerPictureUrl = req.body.bannerPictureUrl;
 

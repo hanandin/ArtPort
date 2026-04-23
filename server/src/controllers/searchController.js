@@ -22,14 +22,26 @@ export const searchUsers = async (req, res) => {
       {
         $search: {
           index: "username_search",
-          text: {
-            query: query,
-            path: "username",
-            fuzzy: {
-              maxEdits: 2,
-              prefixLength: 0,
+          compound: {
+            should: [{
+              // Exact autocomplete matches on username with high boost to prioritize them in results.
+              autocomplete: {
+                query: query,
+                path: "username",
+                score: { boost: { value: 5 } } // Strongly boost exact autocomplete matches to rank them higher than fuzzy matches.
+              }
             },
-          },
+            {
+              // Fuzzy search as a fallback to catch misspellings, but with lower boost than exact autocomplete matches.
+              autocomplete: {
+                query: query,
+                path: "username",
+                fuzzy: {
+                  maxEdits: 2,
+                }
+              }
+            }]
+          }
         },
       },
       {
@@ -80,19 +92,25 @@ export const searchArtworks = async (req, res) => {
           compound: {
             should: [
               {
+                // Title matches should be ranked higher than description matches, so we can boost them.
                 text: {
                   query: query,
                   path: "title",
-                  score: { boost: { value: 2 } },
-                },
+                  score: { boost: { value: 10 } },
+                  fuzzy: { maxEdits: 2 }
+                }
               },
               {
                 text: {
                   query: query,
                   path: "description",
+                  fuzzy: { maxEdits: 2 }
+
                 },
               },
             ],
+            // At least one of the conditions (title or description match) must be satisfied for a document to be included in the results.
+            minimumShouldMatch: 1, 
           },
         },
       },
