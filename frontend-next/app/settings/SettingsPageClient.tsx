@@ -5,10 +5,9 @@ import { useEffect, useState, type FormEvent } from "react";
 import { fetchCurrentUser } from "@/lib/currentUserApi";
 import { patchUserSettings } from "@/lib/userSettingsApi";
 import { sanitizeSingleLineText, TEXT_LIMITS } from "@/lib/textInput";
+import { USER_STATE_EVENT } from "@/lib/userStateEvent";
 
 import styles from "./settings.module.css";
-
-const USER_STATE_EVENT = "artport-user-updated";
 
 export default function SettingsPageClient() {
   const [userId, setUserId] = useState<string | null>(null);

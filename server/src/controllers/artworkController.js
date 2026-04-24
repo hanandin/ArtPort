@@ -4,26 +4,7 @@ import jwt from "jsonwebtoken";
 import { uploadImageToS3 } from "./imageUploadController.js";
 import { withMediaDeliveryUrls } from "../utils/mediaDelivery.js";
 import { validationError } from "../utils/apiErrors.js";
-
-// Import profanity filter from outside package to check for inappropriate content in artwork titles and descriptions
-import { Profanity } from "@2toad/profanity";
-const profanity = new Profanity({
-  // Include multiple languages for better coverage, but can be customized based on target audience
-  languages: [
-    "ar",
-    "zh",
-    "en",
-    "fr",
-    "de",
-    "hi",
-    "it",
-    "ja",
-    "ko",
-    "pt",
-    "ru",
-    "es",
-  ],
-});
+import { profanity } from "../utils/profanity.js";
 
 const getOptionalCurrentUser = async (req) => {
   if (req.user?._id) {
@@ -69,18 +50,32 @@ const getOptionalCurrentUser = async (req) => {
 export const getArtworks = async (req, res) => {
   try {
     const currentUser = await getOptionalCurrentUser(req);
-    const artworks = await Artwork.find().populate(
+    const requestedUserId =
+      typeof req.query.userId === "string" ? req.query.userId.trim() : "";
+
+    const publicUsers = await User.find({ isPrivate: { $ne: true } })
+      .select("_id")
+      .lean();
+
+    const allowedUserIds = new Set(publicUsers.map((user) => String(user._id)));
+    if (currentUser?._id) {
+      allowedUserIds.add(String(currentUser._id));
+    }
+
+    if (requestedUserId && !allowedUserIds.has(requestedUserId)) {
+      return res.json([]);
+    }
+
+    const artworkQuery = requestedUserId
+      ? { userId: requestedUserId }
+      : { userId: { $in: Array.from(allowedUserIds) } };
+
+    const artworks = await Artwork.find(artworkQuery).populate(
       "userId",
       "_id username profilePictureUrl isPrivate",
     );
 
-    const visibleArtworks = artworks.filter(
-      (artwork) =>
-        !artwork.userId?.isPrivate ||
-        String(currentUser?._id) === String(artwork.userId?._id),
-    );
-
-    res.json(visibleArtworks.map((artwork) => withMediaDeliveryUrls(artwork)));
+    res.json(artworks.map((artwork) => withMediaDeliveryUrls(artwork)));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

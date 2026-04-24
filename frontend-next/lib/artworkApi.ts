@@ -169,9 +169,14 @@ export function mapArtworkToProfileItem(
   };
 }
 
-export async function fetchArtworks(options: { auth?: boolean } = {}): Promise<ApiArtworkCommon[]> {
+export async function fetchArtworks(options: { auth?: boolean; userId?: string } = {}): Promise<ApiArtworkCommon[]> {
   try {
-    const res = await apiFetch("/api/artworks", {
+    const userId = stringOrEmpty(options.userId);
+    const path = userId
+      ? `/api/artworks?userId=${encodeURIComponent(userId)}`
+      : "/api/artworks";
+
+    const res = await apiFetch(path, {
       auth: options.auth ?? false,
       credentials: options.auth ? "include" : "omit",
     });

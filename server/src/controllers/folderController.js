@@ -2,26 +2,7 @@ import Folder from "../models/Folder.js";
 import Artwork from "../models/Artwork.js";
 import User from "../models/User.js";
 import { validationError } from "../utils/apiErrors.js";
-
-// Import profanity filter from outside package to check for inappropriate content in folder names
-import { Profanity } from "@2toad/profanity";
-const profanity = new Profanity({
-  // Include multiple languages for better coverage, but can be customized based on target audience
-  languages: [
-    "ar",
-    "zh",
-    "en",
-    "fr",
-    "de",
-    "hi",
-    "it",
-    "ja",
-    "ko",
-    "pt",
-    "ru",
-    "es",
-  ],
-});
+import { profanity } from "../utils/profanity.js";
 
 // @desc    Create a new folder
 // @route   POST /api/folders
@@ -182,40 +163,75 @@ export const getUserFolderTree = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Recursive function to build tree structure
-    const buildFolderTree = async (folderId) => {
-      const folder = await Folder.findById(folderId).select(
-        "_id folderName isPublic createdAt updatedAt",
-      );
-
-      if (!folder) return null;
-
-      const subfolders = await Folder.find({
-        parentFolderId: folderId,
-      }).select("_id folderName isPublic createdAt updatedAt");
-
-      const artworks = await Artwork.find({
-        _id: { $in: folder.artworkIds },
-      }).select("_id title isPublic");
-
-      const children = await Promise.all(
-        subfolders.map((subfolder) => buildFolderTree(subfolder._id)),
-      );
-
-      return {
-        ...folder.toObject(),
-        artworks,
-        subfolders: children.filter((child) => child !== null),
-      };
-    };
-
     if (!user.rootFolderId) {
       return res.status(404).json({
         message: "Root folder not found. Please contact support.",
       });
     }
 
-    const folderTree = await buildFolderTree(user.rootFolderId);
+    const folders = await Folder.find({ userId: req.params.id })
+      .select("_id folderName isPublic createdAt updatedAt parentFolderId artworkIds")
+      .lean();
+
+    const foldersById = new Map(folders.map((folder) => [String(folder._id), folder]));
+    const childrenByParentId = new Map();
+
+    for (const folder of folders) {
+      if (!folder.parentFolderId) continue;
+      const parentKey = String(folder.parentFolderId);
+      if (!childrenByParentId.has(parentKey)) {
+        childrenByParentId.set(parentKey, []);
+      }
+      childrenByParentId.get(parentKey).push(folder);
+    }
+
+    const artworkIds = Array.from(
+      new Set(
+        folders.flatMap((folder) =>
+          Array.isArray(folder.artworkIds)
+            ? folder.artworkIds.map((id) => String(id))
+            : [],
+        ),
+      ),
+    );
+
+    const artworks =
+      artworkIds.length > 0
+        ? await Artwork.find({ _id: { $in: artworkIds } })
+            .select("_id title isPublic")
+            .lean()
+        : [];
+    const artworksById = new Map(
+      artworks.map((artwork) => [String(artwork._id), artwork]),
+    );
+
+    const buildFolderTree = (folderId) => {
+      const folder = foldersById.get(String(folderId));
+      if (!folder) return null;
+
+      const folderArtworks =
+        Array.isArray(folder.artworkIds)
+          ? folder.artworkIds
+              .map((id) => artworksById.get(String(id)))
+              .filter(Boolean)
+          : [];
+
+      const subfolders = (childrenByParentId.get(String(folder._id)) || [])
+        .map((child) => buildFolderTree(child._id))
+        .filter((child) => child !== null);
+
+      return {
+        _id: folder._id,
+        folderName: folder.folderName,
+        isPublic: folder.isPublic,
+        createdAt: folder.createdAt,
+        updatedAt: folder.updatedAt,
+        artworks: folderArtworks,
+        subfolders,
+      };
+    };
+
+    const folderTree = buildFolderTree(user.rootFolderId);
 
     res.json(folderTree);
   } catch (error) {

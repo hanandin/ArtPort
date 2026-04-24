@@ -7,13 +7,13 @@ import ProfileCard, {
   type ProfilePostItem,
 } from "@/components/profilecard";
 import {
-  artworkMatchesUserId,
   fetchArtworks,
   mapArtworkToProfileItem,
 } from "@/lib/artworkApi";
 import { apiFetch } from "@/lib/apiClient";
 import { getClientAuthToken } from "@/lib/authSession";
 import { fetchCurrentUser } from "@/lib/currentUserApi";
+import { normalizeUserProfile } from "@/lib/userProfile";
 
 type ApiUserProfile = {
   _id?: string;
@@ -75,15 +75,15 @@ export default function UserProfileClient({
       .then((res) => (res.ok ? res.json() : null))
       .then((data: ApiUserProfile | null) => {
         if (cancelled || !data) return;
-        if (data.username) setUsername(data.username);
-        if (typeof data.bio === "string") setBio(data.bio);
-        setEmail(data.email);
-        setShowEmailOnProfile(Boolean(data.showEmailOnProfile));
-        if (data._id) {
-          setUserId(String(data._id));
-        }
-        if (data.profilePictureUrl) setProfilePictureUrl(data.profilePictureUrl);
-        if (data.bannerPictureUrl) setBannerPictureUrl(data.bannerPictureUrl);
+
+        const normalized = normalizeUserProfile(data, usernameParam || "Artist");
+        setUsername(normalized.username);
+        setBio(normalized.bio);
+        setEmail(normalized.email);
+        setShowEmailOnProfile(normalized.showEmailOnProfile);
+        setUserId(normalized.userId);
+        setProfilePictureUrl(normalized.profilePictureUrl);
+        setBannerPictureUrl(normalized.bannerPictureUrl);
       })
       .catch(() => {
       });
@@ -98,11 +98,10 @@ export default function UserProfileClient({
       return;
     }
     let cancelled = false;
-    fetchArtworks().then((data) => {
+    fetchArtworks({ userId }).then((data) => {
       if (cancelled) return;
       setUserPosts(
         data
-          .filter((artwork) => artworkMatchesUserId(artwork, userId))
           .map((artwork, index) => mapArtworkToProfileItem(artwork, index))
       );
     });

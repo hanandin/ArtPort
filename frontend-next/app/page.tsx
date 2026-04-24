@@ -7,8 +7,7 @@ import {
   mapArtworkToFeedItem,
   type ArtworkFeedItem,
 } from "@/lib/artworkApi";
-
-const USER_STATE_EVENT = "artport-user-updated";
+import { USER_STATE_EVENT } from "@/lib/userStateEvent";
 
 export default function FrontPage() {
   const [posts, setPosts] = useState<ArtworkFeedItem[]>([]);

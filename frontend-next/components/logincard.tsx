@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/apiClient";
 import { persistAuthSession } from "@/lib/authSession";
 import { sanitizeSingleLineText, TEXT_LIMITS } from "@/lib/textInput";
 import { getApiErrorMessage } from "@/lib/apiErrorMessage";
-const USER_STATE_EVENT = "artport-user-updated";
+import { USER_STATE_EVENT } from "@/lib/userStateEvent";
 type FormOnSubmit = NonNullable<ComponentProps<"form">["onSubmit"]>;
 
 function getErrorMessage(err: unknown): string {

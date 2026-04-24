@@ -5,29 +5,13 @@ import jwt from "jsonwebtoken";
 import { uploadImageToS3 } from "./imageUploadController.js";
 import { withUserDeliveryUrls } from "../utils/mediaDelivery.js";
 import { validationError } from "../utils/apiErrors.js";
-
-// Import profanity filter from outside package to check for inappropriate content in usernames and bios
-import { Profanity } from "@2toad/profanity";
-const profanity = new Profanity({
-  // Include multiple languages for better coverage, but can be customized based on target audience
-  languages: [
-    "ar",
-    "zh",
-    "en",
-    "fr",
-    "de",
-    "hi",
-    "it",
-    "ja",
-    "ko",
-    "pt",
-    "ru",
-    "es",
-  ],
-});
+import { profanity } from "../utils/profanity.js";
 
 const AUTH_COOKIE_NAME = process.env.AUTHCOOKIE_NAME || "artport_token";
 const USERNAME_ASCII_PATTERN = /^[A-Za-z0-9_]+$/;
+const PASSWORD_ALLOWED_PATTERN = /^[A-Za-z\d!?@#$%^&*()_+-=]{8,}$/;
+const PASSWORD_STRONG_PATTERN =
+  /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d!?@#$%^&*()_+-=]{8,}$/;
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -59,10 +43,11 @@ const parseBoolean = (value) => {
   return undefined;
 };
 
+const isAllowedPasswordCharacters = (password) =>
+  PASSWORD_ALLOWED_PATTERN.test(password);
+
 const isStrongPassword = (password) =>
-  /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d!?@#$%^&*()_+-=]{8,}$/.test(
-    password,
-  );
+  PASSWORD_STRONG_PATTERN.test(password);
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -149,8 +134,7 @@ export const registerUser = async (req, res) => {
     }
 
     // Check password for invalid characters (only allow letters, numbers, and certain special characters)
-    const passwordCharactersRegex = /^[A-Za-z\d!?@#$%^&*()_+-=]{8,}$/;
-    if (!passwordCharactersRegex.test(password)) {
+    if (!isAllowedPasswordCharacters(password)) {
       return validationError(
         res,
         "PASSWORD_INVALID_CHARACTERS",
@@ -159,9 +143,7 @@ export const registerUser = async (req, res) => {
     }
 
     // Check password strength (at least 8 characters, including uppercase, lowercase, and numbers)
-    const passwordStrengthRegex =
-      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d!?@#$%^&*()_+-=]{8,}$/;
-    if (!passwordStrengthRegex.test(password)) {
+    if (!isStrongPassword(password)) {
       return validationError(
         res,
         "PASSWORD_WEAK",

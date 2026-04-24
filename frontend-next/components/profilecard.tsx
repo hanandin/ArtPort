@@ -37,6 +37,12 @@ export type ProfileCardProps = {
 const DEFAULT_AVATAR = publicAsset("/avatar-default.svg");
 const BANNER_ASPECT = 935 / 323;
 
+function normalizeOptionalImageSrc(value?: string | null): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function dataUrlToBlob(dataUrl: string): Blob | null {
   const parts = dataUrl.split(",");
   if (parts.length !== 2) return null;
@@ -70,9 +76,13 @@ export default function ProfileCard({
   onBannerImageChange,
   onBioSave,
 }: ProfileCardProps) {
-  const [avatarSrc, setAvatarSrc] = useState(avatarSrcProp ?? DEFAULT_AVATAR);
+  const [avatarSrc, setAvatarSrc] = useState(
+    normalizeOptionalImageSrc(avatarSrcProp) ?? DEFAULT_AVATAR,
+  );
   const [openFolder, setOpenFolder] = useState<string | null>(null);
-  const [bannerSrc, setBannerSrc] = useState<string | null>(bannerSrcProp ?? null);
+  const [bannerSrc, setBannerSrc] = useState<string | null>(
+    normalizeOptionalImageSrc(bannerSrcProp),
+  );
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const [cropMode, setCropMode] = useState<"avatar" | "banner" | null>(null);
   const [pendingTarget, setPendingTarget] = useState<"avatar" | "banner" | null>(null);
@@ -93,6 +103,14 @@ export default function ProfileCard({
       setBioDraft(bio);
     }
   }, [bio, editingBio]);
+
+  useEffect(() => {
+    setAvatarSrc(normalizeOptionalImageSrc(avatarSrcProp) ?? DEFAULT_AVATAR);
+  }, [avatarSrcProp]);
+
+  useEffect(() => {
+    setBannerSrc(normalizeOptionalImageSrc(bannerSrcProp));
+  }, [bannerSrcProp]);
 
   const endCropSession = useCallback(() => {
     setRawImageSrc((prev) => {

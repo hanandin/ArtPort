@@ -7,7 +7,6 @@ import ProfileCard, {
   type ProfilePostItem,
 } from "@/components/profilecard";
 import {
-  artworkMatchesUserId,
   fetchArtworks,
   mapArtworkToProfileItem,
 } from "@/lib/artworkApi";
@@ -15,17 +14,8 @@ import { getClientAuthToken } from "@/lib/authSession";
 import { fetchCurrentUser } from "@/lib/currentUserApi";
 import { apiFetch } from "@/lib/apiClient";
 import { patchUserBio } from "@/lib/userBioApi";
-const USER_STATE_EVENT = "artport-user-updated";
-
-type ApiUserProfile = {
-  _id?: string;
-  username?: string;
-  email?: string;
-  bio?: string;
-  profilePictureUrl?: string;
-  bannerPictureUrl?: string;
-  showEmailOnProfile?: boolean;
-};
+import { USER_STATE_EVENT } from "@/lib/userStateEvent";
+import { normalizeUserProfile } from "@/lib/userProfile";
 
 function MePageContent() {
   const [username, setUsername] = useState("Artist");
@@ -97,13 +87,14 @@ function MePageContent() {
     fetchCurrentUser().then((data) => {
       if (cancelled || !data || !data._id) return;
 
-      if (data.username) setUsername(data.username);
-      setUserId(String(data._id));
-      setEmail(data.email);
-      setShowEmailOnProfile(Boolean(data.showEmailOnProfile));
-      if (typeof data.bio === "string") setBio(data.bio);
-      if (data.profilePictureUrl) setProfilePictureUrl(data.profilePictureUrl);
-      if (data.bannerPictureUrl) setBannerPictureUrl(data.bannerPictureUrl);
+      const normalized = normalizeUserProfile(data);
+      setUsername(normalized.username);
+      setUserId(normalized.userId);
+      setEmail(normalized.email);
+      setShowEmailOnProfile(normalized.showEmailOnProfile);
+      setBio(normalized.bio);
+      setProfilePictureUrl(normalized.profilePictureUrl);
+      setBannerPictureUrl(normalized.bannerPictureUrl);
     });
 
     return () => {
@@ -111,35 +102,10 @@ function MePageContent() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!userId) return;
-
-    let cancelled = false;
-
-    apiFetch(`/api/users/${encodeURIComponent(userId)}`, { auth: false })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: ApiUserProfile | null) => {
-        if (cancelled || !data) return;
-        if (data.username) setUsername(data.username);
-        setEmail(data.email);
-        setShowEmailOnProfile(Boolean(data.showEmailOnProfile));
-        if (typeof data.bio === "string") setBio(data.bio);
-        if (data.profilePictureUrl) setProfilePictureUrl(data.profilePictureUrl);
-        if (data.bannerPictureUrl) setBannerPictureUrl(data.bannerPictureUrl);
-      })
-      .catch(() => {
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
-
   const loadUserPosts = useCallback(() => {
     if (!userId) return;
-    fetchArtworks({ auth: true }).then((data) => {
+    fetchArtworks({ auth: true, userId }).then((data) => {
       const mapped = data
-        .filter((artwork) => artworkMatchesUserId(artwork, userId))
         .map((artwork, index) => mapArtworkToProfileItem(artwork, index));
       setUserPosts(mapped);
     }).catch(() => {

@@ -5,25 +5,8 @@ import Option from "../models/Option.js";
 import Response from "../models/Response.js";
 import Answer from "../models/Answer.js";
 import User from "../models/User.js";
-import { Profanity } from "@2toad/profanity";
 import { validationError } from "../utils/apiErrors.js";
-
-const profanity = new Profanity({
-  languages: [
-    "ar",
-    "zh",
-    "en",
-    "fr",
-    "de",
-    "hi",
-    "it",
-    "ja",
-    "ko",
-    "pt",
-    "ru",
-    "es",
-  ],
-});
+import { profanity } from "../utils/profanity.js";
 
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 

@@ -10,7 +10,6 @@ import {
   fetchArtworkForPost,
   resolveApiAssetUrl,
   fetchArtworks,
-  artworkMatchesUserId,
   mapArtworkToProfileItem,
   type ApiArtworkDetail,
 } from "@/lib/artworkApi";
@@ -25,8 +24,7 @@ import {
 import { getClientAuthToken } from "@/lib/authSession";
 import { fetchCurrentUser } from "@/lib/currentUserApi";
 import type { FeedbackFormConfig } from "@/types/feedback";
-
-const USER_STATE_EVENT = "artport-user-updated";
+import { USER_STATE_EVENT } from "@/lib/userStateEvent";
 
 type Props = {
   segment: string;
@@ -88,13 +86,11 @@ export default function PostPageClient({ segment }: Props) {
         setIsOwnerArtwork(isOwner);
 
         if (artist.userId) {
-          fetchArtworks().then((allArtworks) => {
+          fetchArtworks({ userId: artist.userId }).then((allArtworks) => {
             if (cancelled) return;
             const otherUserArtworks = allArtworks
               .filter(
-                (a) =>
-                  artworkMatchesUserId(a, artist.userId) &&
-                  String(a._id) !== String(data._id)
+                (a) => String(a._id) !== String(data._id)
               )
               .map((a, index) => mapArtworkToProfileItem(a, index))
               .slice(0, 4);
