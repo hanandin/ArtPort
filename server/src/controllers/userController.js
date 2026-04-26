@@ -177,28 +177,37 @@ export const registerUser = async (req, res) => {
       });
 
       // Create "Portfolio" folder
-      await Folder.create({
+      const portfolioFolder = await Folder.create({
         userId: user._id,
         folderName: "Portfolio",
         parentFolderId: rootFolder._id,
         isPublic: true,
       });
+      // Add the folder ID to the root folder's subfolderIds
+      rootFolder.subfolderIds.push(portfolioFolder._id);
+      await rootFolder.save();
 
       // Create "Bookmarks" folder
-      await Folder.create({
+      const bookmarksFolder = await Folder.create({
         userId: user._id,
         folderName: "Bookmarks",
         parentFolderId: rootFolder._id,
         isPublic: false,
       });
+      // Add the folder ID to the root folder's subfolderIds
+      rootFolder.subfolderIds.push(bookmarksFolder._id);
+      await rootFolder.save();
 
       // Create "Archive" folder
-      await Folder.create({
+      const archiveFolder = await Folder.create({
         userId: user._id,
         folderName: "Archive",
         parentFolderId: rootFolder._id,
         isPublic: false,
       });
+      // Add the folder ID to the root folder's subfolderIds
+      rootFolder.subfolderIds.push(archiveFolder._id);
+      await rootFolder.save();
 
       // Update user with root folder reference
       user.rootFolderId = rootFolder._id;

@@ -74,6 +74,13 @@ export const createFolder = async (req, res) => {
       isPublic: isPublic !== undefined ? isPublic : true,
     });
 
+    // If it's a subfolder, add it to the parent's subfolderIds
+    if (parentFolderId) {
+      await Folder.findByIdAndUpdate(parentFolderId, {
+        $push: { subfolderIds: folder._id },
+      });
+    }
+
     res.status(201).json(folder);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -386,10 +393,8 @@ export const deleteFolder = async (req, res) => {
       });
     }
 
-    // Check for subfolders and artworks
-    const subfolderCount = await Folder.countDocuments({
-      parentFolderId: req.params.id,
-    });
+    // Check for subfolders by taking the length of subfolderIds array
+    const subfolderCount = folder.subfolderIds ? folder.subfolderIds.length : 0;
 
     const artworkCount = folder.artworkIds ? folder.artworkIds.length : 0;
     const hasContent = subfolderCount > 0 || artworkCount > 0;
@@ -407,19 +412,29 @@ export const deleteFolder = async (req, res) => {
 
     if (deleteContents) {
       // Recursively delete all subfolders and their contents
-      const deleteSubfolders = async (parentId) => {
-        const subfolders = await Folder.find({ parentFolderId: parentId });
+      const deleteFolderAndContents = async (folderId) => {
+        const folderToDelete = await Folder.findById(folderId);
+        if (!folderToDelete) return;
 
-        for (const subfolder of subfolders) {
-          await deleteSubfolders(subfolder._id);
-          await Folder.findByIdAndDelete(subfolder._id);
+        // Delete all artworks in this folder
+        if (folderToDelete.artworkIds.length > 0) {
+          await Artwork.deleteMany({ _id: { $in: folderToDelete.artworkIds } });
         }
-      };
 
-      await deleteSubfolders(req.params.id);
+        // Recursively delete subfolders
+        if (folderToDelete.subfolderIds.length > 0) {
+          for (const subfolderId of folderToDelete.subfolderIds) {
+            await deleteFolderAndContents(subfolderId);
+          }
+        }
+      }
 
-      // Delete all artworks in this folder
-      await Artwork.deleteMany({ folderId: req.params.id });
+      // Remove the folder from its parent's subfolderIds
+      if (folder.parentFolderId) {
+        await Folder.findByIdAndUpdate(folder.parentFolderId, {
+          $pull: { subfolderIds: folder._id },
+        });
+      }
 
       // Delete the folder itself
       await Folder.findByIdAndDelete(req.params.id);
@@ -433,10 +448,15 @@ export const deleteFolder = async (req, res) => {
       // Move subfolders to parent folder
       if (subfolderCount > 0) {
         await Folder.updateMany(
-          { parentFolderId: req.params.id },
-          { parentFolderId: folder.parentFolderId },
+          { _id: { $in: folder.subfolderIds } },
+          { parentFolderId: parentFolderId }
         );
       }
+
+      // Add the moved subfolders to the parent folder's subfolderIds
+      await Folder.findByIdAndUpdate(parentFolderId, {
+        $push: { subfolderIds: { $each: folder.subfolderIds } },
+      });
 
       // Move artworks to parent folder
       if (artworkCount > 0 && folder.parentFolderId) {
