@@ -205,20 +205,26 @@ export const getUserFolderTree = async (req, res) => {
     );
 
     if (!childNames.has("bookmarks")) {
-      await Folder.create({
+      const newBookmarks = await Folder.create({
         userId: req.params.id,
         folderName: "Bookmarks",
         parentFolderId: user.rootFolderId,
         isPublic: false,
       });
+      await Folder.findByIdAndUpdate(user.rootFolderId, {
+        $push: { subfolderIds: newBookmarks._id },
+      });
     }
 
     if (!childNames.has("archive")) {
-      await Folder.create({
+      const newArchive = await Folder.create({
         userId: req.params.id,
         folderName: "Archive",
         parentFolderId: user.rootFolderId,
         isPublic: false,
+      });
+      await Folder.findByIdAndUpdate(user.rootFolderId, {
+        $push: { subfolderIds: newArchive._id },
       });
     }
 
