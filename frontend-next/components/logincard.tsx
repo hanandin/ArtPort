@@ -13,6 +13,25 @@ function getErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : "Something went wrong";
 }
 
+function normalizeSignupError(message: string): string {
+  const m = message.trim().toLowerCase();
+  if (
+    m.includes("username") &&
+    (m.includes("exists") || m.includes("taken") || m.includes("duplicate"))
+  ) {
+    return "username already exists";
+  }
+  return message;
+}
+
+function validateSignupUsername(username: string): string | null {
+  const len = username.trim().length;
+  if (len < 3 || len > 32) {
+    return "username is too long or too short";
+  }
+  return null;
+}
+
 type LoginCardProps = {
   redirectAfterLogin?: string;
 };
@@ -84,6 +103,12 @@ const LoginCard: React.FC<LoginCardProps> = ({
       password,
       TEXT_LIMITS.password
     );
+    const usernameLengthError = validateSignupUsername(safeUsername);
+    if (usernameLengthError) {
+      setError(usernameLengthError);
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await apiFetch("/api/users/register", {
@@ -116,7 +141,7 @@ const LoginCard: React.FC<LoginCardProps> = ({
 
       router.push(redirectAfterLogin || "/me");
     } catch (err: unknown) {
-      setError(getErrorMessage(err));
+      setError(normalizeSignupError(getErrorMessage(err)));
     } finally {
       setLoading(false);
     }

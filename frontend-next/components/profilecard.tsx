@@ -368,8 +368,6 @@ export default function ProfileCard({
         </div>
 
         <div className="profile_stats_col">
-          <p className="stats_individual">{followers} followers</p>
-          <p className="stats_individual">{following} following</p>
           <p className="stats_individual">{posts} posts</p>
         </div>
       </div>
