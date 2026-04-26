@@ -149,12 +149,6 @@ export default function FeedbackFormCard({
     setSubmitted(true);
   };
 
-  const handleReset = () => {
-    setAnswers(emptyAnswers(config.questions));
-    setSubmitted(false);
-    setSubmitError("");
-  };
-
   return (
     <article className={styles.card}>
       <header className={styles.header}>
@@ -171,13 +165,6 @@ export default function FeedbackFormCard({
               ? "Thanks — your feedback was submitted."
               : "Thanks — your feedback was saved locally."}
           </p>
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            onClick={handleReset}
-          >
-            Answer again
-          </button>
         </div>
       ) : (
         <form className={styles.form} onSubmit={handleSubmit}>

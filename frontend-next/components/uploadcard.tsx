@@ -53,10 +53,16 @@ export default function UploadCardExact({ onUpload, userId, folderOptions = [] }
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!file.type || !file.type.startsWith("image/")) {
+      setSubmitError("please only upload image files");
+      e.target.value = "";
+      return;
+    }
 
     revokeFullImageUrl();
     setThumbnailBlob(null);
     setThumbnailDisplayUrl("");
+    setSubmitError("");
 
     setSelectedFile(file);
     const url = URL.createObjectURL(file);
