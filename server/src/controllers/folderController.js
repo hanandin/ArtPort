@@ -410,34 +410,35 @@ export const deleteFolder = async (req, res) => {
       });
     }
 
+    // Remove the folder from its parent's subfolderIds
+    if (folder.parentFolderId) {
+      await Folder.findByIdAndUpdate(folder.parentFolderId, {
+        $pull: { subfolderIds: folder._id },
+      });
+    }
+
     if (deleteContents) {
-      // Recursively delete all subfolders and their contents
       const deleteFolderAndContents = async (folderId) => {
         const folderToDelete = await Folder.findById(folderId);
         if (!folderToDelete) return;
+
+        // Recursively get to subfolders and delete them
+        if (folderToDelete.subfolderIds.length > 0) {
+          for (const subfolderId of folderToDelete.subfolderIds) {
+            await deleteFolderAndContents(subfolderId);
+          }
+        }
 
         // Delete all artworks in this folder
         if (folderToDelete.artworkIds.length > 0) {
           await Artwork.deleteMany({ _id: { $in: folderToDelete.artworkIds } });
         }
 
-        // Recursively delete subfolders
-        if (folderToDelete.subfolderIds.length > 0) {
-          for (const subfolderId of folderToDelete.subfolderIds) {
-            await deleteFolderAndContents(subfolderId);
-          }
-        }
+        // Finally, delete the folder itself
+        await Folder.findByIdAndDelete(folderId);
       }
 
-      // Remove the folder from its parent's subfolderIds
-      if (folder.parentFolderId) {
-        await Folder.findByIdAndUpdate(folder.parentFolderId, {
-          $pull: { subfolderIds: folder._id },
-        });
-      }
-
-      // Delete the folder itself
-      await Folder.findByIdAndDelete(req.params.id);
+      await deleteFolderAndContents(folder._id);
 
       res.json({
         message: "Folder and all contents deleted successfully",
@@ -445,30 +446,37 @@ export const deleteFolder = async (req, res) => {
         deletedArtworks: artworkCount,
       });
     } else if (moveContentsUp) {
-      // Move subfolders to parent folder
+      // Assign a new parent folder ID to the subfolders
       if (subfolderCount > 0) {
         await Folder.updateMany(
           { _id: { $in: folder.subfolderIds } },
-          { parentFolderId: parentFolderId }
+          { parentFolderId: folder.parentFolderId }
         );
       }
 
       // Add the moved subfolders to the parent folder's subfolderIds
-      await Folder.findByIdAndUpdate(parentFolderId, {
-        $push: { subfolderIds: { $each: folder.subfolderIds } },
-      });
+      const parentFolder = await Folder.findById(folder.parentFolderId);
+      parentFolder.subfolderIds.push(...folder.subfolderIds);
+      await parentFolder.save();
+
+      // Clean up the moved subfolder IDs from the deleted folder
+      folder.subfolderIds = [];
+      await folder.save();
 
       // Move artworks to parent folder
-      if (artworkCount > 0 && folder.parentFolderId) {
-        const parentFolder = await Folder.findById(folder.parentFolderId);
-        if (parentFolder) {
-          parentFolder.artworkIds.push(...folder.artworkIds);
-          await parentFolder.save();
-        }
+      parentFolder.artworkIds.push(...folder.artworkIds);
+      await parentFolder.save();
+
+      // Update the moved artworks to point to the new folder
+      if (artworkCount > 0) {
+        await Artwork.updateMany(
+          { _id: { $in: folder.artworkIds } },
+          { folderId: folder.parentFolderId }
+        );
       }
 
       // Delete the folder
-      await Folder.findByIdAndDelete(req.params.id);
+      await Folder.findByIdAndDelete(folder._id);
 
       res.json({
         message: "Folder deleted. Contents moved to parent folder.",
