@@ -5,6 +5,7 @@ export const TEXT_LIMITS = {
   username: 32,
   email: 254,
   password: 128,
+  bio: 512,
   searchQuery: 120,
   artworkTitle: 120,
   artworkDescription: 1000,

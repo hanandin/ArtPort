@@ -12,6 +12,7 @@ import { publicAsset } from "@/lib/paths";
 import {
   sanitizeMultilineText,
   sanitizeSingleLineText,
+  TEXT_LIMITS,
 } from "@/lib/textInput";
 
 import "./profilecard.css";
@@ -304,10 +305,10 @@ export default function ProfileCard({
                     value={bioDraft}
                     onChange={(e) =>
                       setBioDraft(
-                        sanitizeMultilineText(e.target.value, 500)
+                        sanitizeMultilineText(e.target.value, TEXT_LIMITS.bio)
                       )
                     }
-                    maxLength={500}
+                    maxLength={TEXT_LIMITS.bio}
                     rows={4}
                     placeholder="Tell visitors about your work…"
                     aria-label="Bio"

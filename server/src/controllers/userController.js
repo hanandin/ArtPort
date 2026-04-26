@@ -419,6 +419,15 @@ export const updateUser = async (req, res) => {
     if (Object.prototype.hasOwnProperty.call(req.body, "bio")) {
       const requestedBio = typeof req.body.bio === "string" ? req.body.bio : "";
 
+      // Check bio length
+      if (requestedBio.length > 512) {
+        return validationError(
+          res,
+          "BIO_TOO_LONG",
+          "Bio cannot exceed 512 characters",
+        );
+      }
+
       // Check for profanity in bio, send message if found.
       if (profanity.exists(requestedBio)) {
         return validationError(
