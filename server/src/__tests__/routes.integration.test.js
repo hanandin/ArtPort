@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import User from "../models/User.js";
 import Folder from "../models/Folder.js";
+import createServerApp from "../createServerApp.js";
 
 let app;
 let mongoServer;
@@ -23,7 +24,7 @@ const connectIntegrationDatabase = async () => {
   process.env.MONGO_URI = mongoServer.getUri();
 
   await mongoose.connect(mongoServer.getUri());
-  ({ default: app } = await import("../app.js"));
+  app = createServerApp();
 };
 
 const clearDatabase = async () => {
