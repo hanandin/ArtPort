@@ -9,6 +9,7 @@ import { profanity } from "../utils/profanity.js";
 
 const AUTH_COOKIE_NAME = process.env.AUTHCOOKIE_NAME || "artport_token";
 const USERNAME_ASCII_PATTERN = /^[A-Za-z0-9_]+$/;
+const USERNAME_LOWERCASE_PATTERN = /^[a-z0-9_]+$/;
 const PASSWORD_ALLOWED_PATTERN = /^[A-Za-z\d!?@#$%^&*()_+-=]{8,}$/;
 const PASSWORD_STRONG_PATTERN =
   /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d!?@#$%^&*()_+-=]{8,}$/;
@@ -102,6 +103,14 @@ export const registerUser = async (req, res) => {
       );
     }
 
+    if (!USERNAME_LOWERCASE_PATTERN.test(trimmedUsername)) {
+      return validationError(
+        res,
+        "USERNAME_LOWERCASE_ONLY",
+        "Username must be all lowercase",
+      );
+    }
+
     // Check for profanity in username, send message if found.
     if (profanity.exists(trimmedUsername)) {
       return validationError(
@@ -113,7 +122,8 @@ export const registerUser = async (req, res) => {
 
     // const userExists = await User.findOne({ email });
     const emailExists = await User.findOne({ email: trimmedEmail });
-    const usernameExists = await User.findOne({ username: trimmedUsername });
+    const usernameExists = await User.findOne({ username: trimmedUsername })
+      .collation({ locale: "en", strength: 2 });
 
     // if (userExists) {
     if (emailExists) {
@@ -160,7 +170,7 @@ export const registerUser = async (req, res) => {
     }
 
     const user = await User.create({
-      username: trimmedUsername,
+      username: trimmedUsername.toLowerCase(),
       email: trimmedEmail,
       passwordHash,
       profilePictureUrl,
@@ -227,11 +237,24 @@ export const registerUser = async (req, res) => {
       res.status(400).json({ message: "Invalid user data" });
     }
   } catch (error) {
+    const errmsg = String(error).toLowerCase();
+    if (error.code === 11000 || errmsg.includes("11000")) {
+      if (errmsg.includes("email")) {
+        return validationError(
+          res,
+          "EMAIL_ALREADY_EXISTS",
+          "User with this email already exists",
+        );
+      }
+      return validationError(
+        res,
+        "USERNAME_ALREADY_EXISTS",
+        "User with this username already exists",
+      );
+    }
     res.status(400).json({ message: error.message });
   }
 };
-
-// @desc    Login user
 // @route   POST /api/users/login
 // @access  Public
 export const loginUser = async (req, res) => {
@@ -289,13 +312,9 @@ export const getUserProfile = async (req, res) => {
 // @access  Public
 export const getUserByUsername = async (req, res) => {
   try {
-    const usernameRegex = new RegExp(
-      `^${escapeRegex(req.params.username)}$`,
-      "i",
-    );
-    const user = await User.findOne({ username: usernameRegex }).select(
-      "-passwordHash",
-    );
+    const user = await User.findOne({ username: req.params.username })
+      .collation({ locale: "en", strength: 2 })
+      .select("-passwordHash");
 
     if (user) {
       const plainUser = withUserDeliveryUrls(user);
@@ -362,6 +381,14 @@ export const updateUser = async (req, res) => {
         );
       }
 
+      if (!USERNAME_LOWERCASE_PATTERN.test(requestedUsername)) {
+        return validationError(
+          res,
+          "USERNAME_LOWERCASE_ONLY",
+          "Username must be all lowercase",
+        );
+      }
+
       // Check for profanity in username, send message if found.
       if (profanity.exists(requestedUsername)) {
         return validationError(
@@ -372,9 +399,8 @@ export const updateUser = async (req, res) => {
       }
 
       // Check if the username is already taken by another user (excluding current user)
-      const usernameExists = await User.findOne({
-        username: requestedUsername,
-      });
+      const usernameExists = await User.findOne({ username: requestedUsername })
+        .collation({ locale: "en", strength: 2 });
       if (
         usernameExists &&
         String(usernameExists._id) !== String(req.user._id)
@@ -382,12 +408,12 @@ export const updateUser = async (req, res) => {
         return validationError(
           res,
           "USERNAME_ALREADY_EXISTS",
-          "User with this username already exists",
+          "That username is already taken. Please choose a different one.",
         );
       }
 
       // Good to update username if no issues detected.
-      user.username = requestedUsername;
+      user.username = requestedUsername.toLowerCase();
     }
 
     if (req.body.email) {
@@ -504,6 +530,21 @@ export const updateUser = async (req, res) => {
 
     res.json(withUserDeliveryUrls(updatedUser));
   } catch (error) {
+    const errmsg = String(error).toLowerCase();
+    if (error.code === 11000 || errmsg.includes("11000")) {
+      if (errmsg.includes("email")) {
+        return validationError(
+          res,
+          "EMAIL_ALREADY_EXISTS",
+          "User with this email already exists",
+        );
+      }
+      return validationError(
+        res,
+        "USERNAME_ALREADY_EXISTS",
+        "That username is already taken. Please choose a different one.",
+      );
+    }
     res.status(400).json({ message: error.message });
   }
 };
