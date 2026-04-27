@@ -1,6 +1,6 @@
 import express from "express";
 import { upload } from "../middleware/upload.js";
-import { protect } from "../middleware/auth.js";
+import { protect, optionalProtect } from "../middleware/auth.js";
 import {
   getCurrentUser,
   getUsers,
@@ -21,7 +21,7 @@ router.post("/login", loginUser);
 router.get("/me", protect, getCurrentUser);
 
 router.get("/by-username/:username", getUserByUsername);
-router.get("/:id/folder-tree", protect, getUserFolderTree);
+router.get("/:id/folder-tree", optionalProtect, getUserFolderTree);
 
 router.patch(
   "/:id",

@@ -14,6 +14,12 @@ import { apiFetch } from "@/lib/apiClient";
 import { getClientAuthToken } from "@/lib/authSession";
 import { fetchCurrentUser } from "@/lib/currentUserApi";
 import { normalizeUserProfile } from "@/lib/userProfile";
+import {
+  fetchUserFolderTree,
+  fetchFolderContents,
+  type FolderSummaryItem,
+} from "@/lib/folderApi";
+import { mapArtworkToProfileItem as mapArtwork } from "@/lib/artworkApi";
 
 type ApiUserProfile = {
   _id?: string;
@@ -39,6 +45,11 @@ export default function UserProfileClient({
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
   const [bannerPictureUrl, setBannerPictureUrl] = useState<string | undefined>(undefined);
   const [userPosts, setUserPosts] = useState<ProfilePostItem[]>([]);
+  const [collectionFolders, setCollectionFolders] = useState<
+    { id: string; label: string; isPublic: boolean }[]
+  >([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [collectionsError, setCollectionsError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -110,6 +121,54 @@ export default function UserProfileClient({
     };
   }, [userId]);
 
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    setCollectionsLoading(true);
+    setCollectionsError("");
+    fetchUserFolderTree(userId)
+      .then((tree) => {
+        if (cancelled) return;
+        setCollectionFolders(
+          Array.isArray(tree?.subfolders)
+            ? tree!.subfolders.map((f) => ({
+                id: String(f._id),
+                label: f.folderName,
+                isPublic: Boolean(f.isPublic),
+              }))
+            : [],
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setCollectionsError("Could not load folders");
+      })
+      .finally(() => {
+        if (!cancelled) setCollectionsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const handleLoadFolderContents = async (folderId: string) => {
+    const data = await fetchFolderContents(folderId);
+    return {
+      id: String(data.folder._id),
+      label: data.folder.folderName,
+      isPublic: Boolean(data.folder.isPublic),
+      subfolders: Array.isArray(data.subfolders)
+        ? data.subfolders.map((f: FolderSummaryItem) => ({
+            id: String(f._id),
+            label: f.folderName,
+            isPublic: Boolean(f.isPublic),
+          }))
+        : [],
+      artworks: Array.isArray(data.artworks)
+        ? data.artworks.map((a, i) => mapArtwork(a, i))
+        : [],
+    };
+  };
+
   const visibleUserPosts = userId ? userPosts : [];
   const profileCardKey = [
     usernameParam,
@@ -135,6 +194,10 @@ export default function UserProfileClient({
         posts={postCount}
         userPosts={visibleUserPosts}
         isEditable={false}
+        collectionFolders={collectionFolders}
+        collectionsLoading={collectionsLoading}
+        collectionsError={collectionsError}
+        onLoadFolderContents={handleLoadFolderContents}
       />
     </main>
   );

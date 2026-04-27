@@ -169,15 +169,8 @@ export const getFolderContents = async (req, res) => {
 // @access  Private (only own tree)
 export const getUserFolderTree = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
-
-    if (String(req.user._id) !== String(req.params.id)) {
-      return res.status(403).json({
-        message: "You can only view your own folder tree",
-      });
-    }
+    const isOwner =
+      req.user && String(req.user._id) === String(req.params.id);
 
     const user = await User.findById(req.params.id);
 
@@ -191,44 +184,51 @@ export const getUserFolderTree = async (req, res) => {
       });
     }
 
-    const rootFolder = await Folder.findById(user.rootFolderId)
-      .select("subfolderIds")
-      .lean();
-    const rootChildren = rootFolder?.subfolderIds?.length
-      ? await Folder.find({ _id: { $in: rootFolder.subfolderIds } })
-          .select("folderName")
-          .lean()
-      : [];
+    // Auto-create system folders only for the owner
+    if (isOwner) {
+      const rootFolder = await Folder.findById(user.rootFolderId)
+        .select("subfolderIds")
+        .lean();
+      const rootChildren = rootFolder?.subfolderIds?.length
+        ? await Folder.find({ _id: { $in: rootFolder.subfolderIds } })
+            .select("folderName")
+            .lean()
+        : [];
 
-    const childNames = new Set(
-      rootChildren.map((folder) => normalizeFolderName(folder.folderName)),
-    );
+      const childNames = new Set(
+        rootChildren.map((folder) => normalizeFolderName(folder.folderName)),
+      );
 
-    if (!childNames.has("bookmarks")) {
-      const newBookmarks = await Folder.create({
-        userId: req.params.id,
-        folderName: "Bookmarks",
-        parentFolderId: user.rootFolderId,
-        isPublic: false,
-      });
-      await Folder.findByIdAndUpdate(user.rootFolderId, {
-        $push: { subfolderIds: newBookmarks._id },
-      });
+      if (!childNames.has("bookmarks")) {
+        const newBookmarks = await Folder.create({
+          userId: req.params.id,
+          folderName: "Bookmarks",
+          parentFolderId: user.rootFolderId,
+          isPublic: false,
+        });
+        await Folder.findByIdAndUpdate(user.rootFolderId, {
+          $push: { subfolderIds: newBookmarks._id },
+        });
+      }
+
+      if (!childNames.has("archive")) {
+        const newArchive = await Folder.create({
+          userId: req.params.id,
+          folderName: "Archive",
+          parentFolderId: user.rootFolderId,
+          isPublic: false,
+        });
+        await Folder.findByIdAndUpdate(user.rootFolderId, {
+          $push: { subfolderIds: newArchive._id },
+        });
+      }
     }
 
-    if (!childNames.has("archive")) {
-      const newArchive = await Folder.create({
-        userId: req.params.id,
-        folderName: "Archive",
-        parentFolderId: user.rootFolderId,
-        isPublic: false,
-      });
-      await Folder.findByIdAndUpdate(user.rootFolderId, {
-        $push: { subfolderIds: newArchive._id },
-      });
-    }
+    const folderQuery = isOwner
+      ? { userId: req.params.id }
+      : { userId: req.params.id, $or: [{ _id: user.rootFolderId }, { isPublic: true }] };
 
-    const folders = await Folder.find({ userId: req.params.id })
+    const folders = await Folder.find(folderQuery)
       .select(
         "_id folderName isPublic createdAt updatedAt subfolderIds artworkIds",
       )
@@ -266,6 +266,7 @@ export const getUserFolderTree = async (req, res) => {
         ? folder.artworkIds
             .map((id) => artworksById.get(String(id)))
             .filter(Boolean)
+            .filter((artwork) => isOwner || artwork.isPublic)
         : [];
 
       const subfolders = (folder.subfolderIds || [])
