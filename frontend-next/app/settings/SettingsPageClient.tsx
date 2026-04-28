@@ -54,6 +54,11 @@ export default function SettingsPageClient() {
     event.preventDefault();
     if (!userId) return;
 
+    if (form.username.trim() !== form.username.trim().toLowerCase()) {
+      setStatus({ kind: "error", message: "Username must be all lowercase" });
+      return;
+    }
+
     const wantsPasswordChange =
       form.currentPassword.length > 0 ||
       form.newPassword.length > 0 ||

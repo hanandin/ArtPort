@@ -29,6 +29,9 @@ function validateSignupUsername(username: string): string | null {
   if (len < 3 || len > 32) {
     return "username is too long or too short";
   }
+  if (username.trim() !== username.trim().toLowerCase()) {
+    return "Username must be all lowercase";
+  }
   return null;
 }
 
