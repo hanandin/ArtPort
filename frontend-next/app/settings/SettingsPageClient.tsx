@@ -203,6 +203,10 @@ export default function SettingsPageClient() {
                 onChange={(event) => updateField("confirmNewPassword", event.target.value)}
                 placeholder="Confirm new password"
               />
+              <p className={styles.passwordHint}>
+                Passwords must be at least 8 characters and include uppercase and
+                lowercase letters and numbers. Allowed special characters: !?@#$%^&*()_+-=
+              </p>
             </div>
           </div>
 

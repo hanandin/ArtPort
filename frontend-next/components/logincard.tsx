@@ -222,6 +222,12 @@ const LoginCard: React.FC<LoginCardProps> = ({
           maxLength={TEXT_LIMITS.password}
           required
         />
+        {isSignup && (
+          <div className="password-hint" role="status" aria-live="polite">
+            Passwords must be at least 8 characters and include uppercase and
+            lowercase letters and numbers. Allowed special characters: !?@#$%^&*()_+-=
+          </div>
+        )}
 
         <button 
           type="submit" 

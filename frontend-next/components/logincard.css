@@ -48,3 +48,8 @@
 .login-page-main {
   @apply min-h-screen flex items-center justify-center;
 }
+
+.password-hint {
+  @apply text-[14px] text-[#333333] leading-5 mt-2 max-w-[440px];
+  font-family: Arial, sans-serif;
+}

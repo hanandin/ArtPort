@@ -35,7 +35,7 @@
       "required": true,
       "options": [
         { "value": "lineart", "label": "Lineart" },
-        { "value": "composition", "label": "Maybe" },
+        { "value": "composition", "label": "Composition" },
         { "value": "color", "label": "Color Theory" }
       ]
     },

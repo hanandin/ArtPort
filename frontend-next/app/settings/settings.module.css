@@ -159,6 +159,13 @@
   gap: 0.75rem;
 }
 
+.passwordHint {
+  color: rgba(31, 31, 31, 0.78);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-top: 0.25rem;
+}
+
 .footer {
   display: flex;
   flex-wrap: wrap;
